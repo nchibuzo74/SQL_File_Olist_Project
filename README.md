@@ -100,3 +100,5 @@ The following insights and metrics were drived to improve sales:
 11. CSAT Score by State
 12. Monthly CSAT Score
 13. Sentiment/Reponse Rating
+
+A dashboard was created using Power BI to showcase the insights derived from the dataset.
