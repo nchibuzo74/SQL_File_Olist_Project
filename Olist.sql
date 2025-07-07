@@ -1,3 +1,19 @@
+---The Relational Database Management System (RDBMS) used is PostgreSQL.
+/*
+1. Create all Dimension tables:
+- Customer
+- Geolocation
+- Product
+- Category
+- Seller
+
+2. Create all Fact tables:
+- Order
+- Payment
+- Order Item
+- Order Review
+*/
+----------------------------------------------------------------------------
 ---Retrieve the customer data
 select *
 from olist_datasets.customers;
