@@ -37,6 +37,7 @@ SELECT distinct geolocation_zip_code_prefix
 from olist_datasets.geolocation;
 
 ---Create a unique table with geolocation data
+with geolocation_base as (
 SELECT geolocation_zip_code_prefix,
 geolocation_state as state,
 geolocation_city as city,
@@ -44,4 +45,8 @@ max(geolocation_lat) as max_lat,
 max(geolocation_lng) as max_lng
 from olist_datasets.geolocation
 group by geolocation_zip_code_prefix, 
-geolocation_state, geolocation_city;
+geolocation_state, geolocation_city
+)
+select *
+from geolocation_base;
+---
