@@ -198,3 +198,6 @@ review_answer_timestamp timestamp not null
 
 --Retrieve the table
 select * from olist_datasets.order_reviews;
+
+------------------------------------------------------------------------
+---Solutions to Business Questions
