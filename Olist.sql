@@ -98,6 +98,69 @@ from geolocation_base;
 ---Retrieve the View table
 select * from olist_datasets.geolocation_unique;
 
+-----------------------------------------------------------
+
+---Create an Store Procedure (SP) to store the unique geolocation data
+create procedure olist_datasets.geolocation_unique()
+LANGUAGE SQL
+as $$
+with UP_geolocation_base as (
+SELECT distinct geolocation_zip_code_prefix,
+geolocation_state as state,
+geolocation_city as city,
+geolocation_lat,
+geolocation_lng
+from olist_datasets.geolocation
+)
+select *
+from UP_geolocation_base;
+$$;
+
+---execute the SP
+CALL olist_datasets.geolocation_unique();
+
+
+------------------------------------------------------------------------------------------------------------------------------
+-------Create a dump table from a store procedure----------
+create or replace procedure olist_datasets.USP_geolocation_unique_()
+LANGUAGE SQL
+as $$
+
+drop table if exists USP_geolocation_base_;
+SELECT distinct geolocation_zip_code_prefix,
+geolocation_state as state,
+geolocation_city as city,
+geolocation_lat,
+geolocation_lng
+into USP_geolocation_base_
+from olist_datasets.geolocation;
+
+---Final block
+drop table if exists USP_Get_geolocation_base;
+select *
+into USP_Get_geolocation_base
+from USP_geolocation_base_;
+
+---main action of creating the dummy table: drop into, delete, insert and select
+/*
+select *                ----change the create to alter (i.e. we are altering the proc). Uncomment the block before the below code, then comment the below code then compile. Run exec List_Percentage 
+into olist_datasets.USP_geolocation_unique_
+from USP_Get_geolocation_base;
+*/
+
+---delete from olist_datasets.USP_geolocation_unique_;   --------------Uncomment the block and comment above line then compile. Run exec List_Percentage
+
+insert into olist_datasets.USP_geolocation_unique_   ------Uncomment both block lines of code - this line and next block of line and comment above line  then compile. Run exec List_Percentage
+select * from USP_Get_geolocation_base;
+
+$$;
+
+CALL olist_datasets.USP_geolocation_unique_();
+
+---Retrieve the dump table
+select * from olist_datasets.USP_geolocation_unique_;
+------------------------------------------------------------------------------------------------------------------------------------------------------
+
 
 ---Create a Product table
 create table olist_datasets.product(
