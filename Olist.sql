@@ -263,4 +263,66 @@ review_answer_timestamp timestamp not null
 select * from olist_datasets.order_reviews;
 
 ------------------------------------------------------------------------
----Solutions to Business Questions
+---Solutions to Business Questions:
+------------------------------------------------------------------------
+/*
+Customer and Sales Analysis:
+1. Total Customer State
+2. Total Customer City
+3. Total Customers
+4. Total Delivered Order
+5. Total Delivered Revenue and Average Yearly Revenue
+6. Total Products
+7. Average Monthly Revenue
+8. AOV
+9. CMV
+*/
+
+---CTE: A Customer base
+with customer_base as (
+    select distinct *
+    from olist_datasets.customers
+),
+---Total Customers
+aggregated_customers as (
+    select count(distinct(customer_state)) as total_customer_state, count(distinct(customer_city)) as total_customer_city,
+	count(customer_id) as total_customers
+    from customer_base
+),
+---Sales info:
+fact_sales as (
+    select order_id, customer_id, order_purchase_timestamp, order_delivered_customer_date, order_estimated_delivery_date, order_status
+    from olist_datasets.orders 
+),
+---Payment info:
+fact_payment as (
+    select order_id, sum(payment_value) as amount
+    from olist_datasets.order_payment
+    where payment_type <> 'not_defined'
+    group by order_id
+),
+---Average Monthly Revenue
+year_month_revenue as (
+    select a.order_id, extract(year from a.order_purchase_timestamp) as year_, extract(month from a.order_purchase_timestamp) as month_,
+    sum(b.payment_value) as revenue
+    from olist_datasets.orders as a
+    inner join olist_datasets.order_payment as b
+    on a.order_id = b.order_id
+    where b.payment_type <> 'not_defined'
+    and a.order_status = 'delivered'
+    group by a.order_id, extract(year from a.order_purchase_timestamp), extract(month from a.order_purchase_timestamp)
+)
+---Final Result
+select ac.total_customer_state, ac.total_customer_city, ac.total_customers, count(distinct(s.customer_id)) as total_customers_with_delivered_order,
+count(distinct(s.order_id)) as total_delivered_order, sum(p.amount) as delivered_revenue,
+(sum(p.amount)/count(distinct(extract(year from s.order_purchase_timestamp)))) as average_yearly_revenue,
+avg(ym.revenue) as average_monthly_revenue,
+(sum(ym.revenue)/count(ym.month_)) as average_monthly_revenue_2
+from fact_sales as s
+left join fact_payment as p
+on s.order_id = p.order_id
+left join year_month_revenue as ym
+on s.order_id = ym.order_id
+cross join aggregated_customers as ac
+where s.order_status = 'delivered' 
+group by ac.total_customer_state, ac.total_customer_city, ac.total_customers;
