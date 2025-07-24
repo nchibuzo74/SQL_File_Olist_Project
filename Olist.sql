@@ -298,7 +298,7 @@ fact_sales as (
 fact_payment as (
     select order_id, sum(payment_value) as amount
     from olist_datasets.order_payment
-    where payment_type <> 'not_defined'
+    --where payment_type <> 'not_defined'
     group by order_id
 ),
 ---Average Monthly Revenue
@@ -308,7 +308,7 @@ year_month_revenue as (
     from olist_datasets.orders as a
     inner join olist_datasets.order_payment as b
     on a.order_id = b.order_id
-    where b.payment_type <> 'not_defined'
+    --where b.payment_type <> 'not_defined'
     and a.order_status = 'delivered'
     group by a.order_id, extract(year from a.order_purchase_timestamp), extract(month from a.order_purchase_timestamp)
 )
@@ -326,3 +326,89 @@ on s.order_id = ym.order_id
 cross join aggregated_customers as ac
 where s.order_status = 'delivered' 
 group by ac.total_customer_state, ac.total_customer_city, ac.total_customers;
+
+---------More questions to be answered on customer and sales analysis:
+/*
+10. Customers by State
+11. Order Trend
+12. GMV Trend
+13. Percentage Order Fulfilement
+14. Average SKU Per Order
+15. Average Item Size per Order
+16. Order Item Contribution per Order
+17. GMV Segmentation
+18. Average Number of Order per Customers by Month Year
+19. Weekly Delivery Time
+20. Delivery Effectiveness - Days Taken
+21. Top 10 Customers
+*/
+
+---Customers by State
+select customer_state, count(distinct(customer_id)) as total_customers
+from olist_datasets.customers
+group by customer_state
+order by customer_state asc;
+
+---Order Trend
+select extract(
+        year
+        from order_purchase_timestamp
+    ) as year_,
+    extract(
+        month
+        from order_purchase_timestamp
+    ) as month_,
+    to_char(order_purchase_timestamp, 'Month') as month_name,
+    count(
+        distinct(order_id)) as total_order
+        from olist_datasets.orders
+        group by extract(
+                year
+                from order_purchase_timestamp
+            ),
+            extract(
+        month
+        from order_purchase_timestamp
+    ),
+    to_char(order_purchase_timestamp, 'Month')
+        order by extract(
+                year
+                from order_purchase_timestamp
+            ) asc, 
+            extract(
+        month
+        from order_purchase_timestamp
+    ) asc;
+
+---GMV Trend
+select extract(
+        year
+        from order_purchase_timestamp
+    ) as year_,
+    extract(
+        month
+        from order_purchase_timestamp
+    ) as month_,
+    to_char(order_purchase_timestamp, 'Month') as month_name,
+    sum(nullif(p.payment_value,0)) as total_gmv
+from olist_datasets.orders as o
+inner join olist_datasets.order_payment as p
+on o.order_id = p.order_id
+where o.order_status = 'delivered'
+group by extract(
+        year
+        from order_purchase_timestamp
+    ),
+    extract(
+        month
+        from order_purchase_timestamp
+    ),
+    to_char(order_purchase_timestamp, 'Month')
+order by extract(
+        year
+        from order_purchase_timestamp
+    ) asc,
+    extract(
+        month
+        from order_purchase_timestamp
+    ) asc;
