@@ -435,3 +435,40 @@ on o.order_id = oi.order_id
 inner join olist_datasets.product as p
 on oi.product_id = p.product_id
 where o.order_status = 'delivered';
+
+---Average Item Size per Order
+select count(oi.order_item_id) as total_items, count(distinct(o.order_id)) as total_orders,
+(count(oi.order_item_id)::float) / (count(distinct(o.order_id))::float) as average_item_per_order
+from olist_datasets.Orders as o
+inner join olist_datasets.order_items as oi
+on o.order_id = oi.order_id
+where o.order_status = 'delivered';
+
+---Order Item Contribution per Order
+---It simple means the bucket segment of the items per order
+---You need a bucket segment to know the contribution of the items per order
+---CTE
+with bucket_segment as (
+select o.order_id,
+case when count(oi.order_item_id) <= 3 then 'Low'
+            when count(oi.order_item_id) > 3 and count(oi.order_item_id) <= 10 then 'Medium'
+            else 'High'
+            end as bucket_segment,
+case when count(oi.order_item_id) <= 3 then 1
+            when count(oi.order_item_id) > 3 and count(oi.order_item_id) <= 10 then 2
+            else 3
+            end as sort_bucket_segment,
+case when count(oi.order_item_id) <= 3 then 'Order with at least 3 products'
+            when count(oi.order_item_id) > 3 and count(oi.order_item_id) <= 10 then 'Order with at least 4-10 products'
+            else 'Order with more than 10 products'
+            end as order_item_segment
+from olist_datasets.Orders as o
+inner join olist_datasets.order_items as oi
+on o.order_id = oi.order_id
+where o.order_status = 'delivered'
+group by o.order_id
+)
+select bucket_segment, order_item_segment, count(distinct(order_id)) as total_delivered_order
+from bucket_segment
+group by sort_bucket_segment, bucket_segment, order_item_segment
+order by sort_bucket_segment asc;
