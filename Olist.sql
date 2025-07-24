@@ -472,3 +472,6 @@ select bucket_segment, order_item_segment, count(distinct(order_id)) as total_de
 from bucket_segment
 group by sort_bucket_segment, bucket_segment, order_item_segment
 order by sort_bucket_segment asc;
+
+---GMV Segmentation
+---It simple means the bucket segment of the GMV per customer count
