@@ -412,3 +412,26 @@ order by extract(
         month
         from order_purchase_timestamp
     ) asc;
+
+---Percentage Order Fulfilment
+---All orders
+with all_orders as (
+    select count(distinct(order_id)) as total_orders
+    from olist_datasets.orders
+)
+---Final Result
+select ((count(distinct(o.order_id))::float / ao.total_orders::float) * 100) as percentage_order_fulfilment
+from olist_datasets.orders as o
+cross join all_orders as ao
+where o.order_status = 'delivered'
+group by ao.total_orders;
+
+---Average SKU Per Order
+select count(distinct(p.product_id)) as total_sku, count(distinct(o.order_id)) as total_orders,
+(count(distinct(p.product_id))::float) / (count(distinct(o.order_id))::float) as average_sku_per_order
+from olist_datasets.Orders as o
+inner join olist_datasets.order_items as oi
+on o.order_id = oi.order_id
+inner join olist_datasets.product as p
+on oi.product_id = p.product_id
+where o.order_status = 'delivered';
