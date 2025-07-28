@@ -76,6 +76,22 @@ Thumbs.db
 *.bit
 *.pbi
 
+# Power BI files
+*.pbix
+*.pbit
+*.pbids
+*.rsd
+
+# Specific Power BI file to ignore
+Olist_Store_[Chibuzo Nwankwo].pbix
+reports/sensitive-data.pbix
+
+# Actual Power BI files with real data
+*.pbix
+
+# Keep templates
+!*-template.pbit
+
 ### Jupyter Notebook ###
 .ipynb_checkpoints
 
