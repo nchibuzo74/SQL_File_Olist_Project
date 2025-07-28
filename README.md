@@ -44,22 +44,20 @@ FROM orders
 JOIN order_items USING(order_id)
 WHERE order_status = 'delivered'
 GROUP BY 1;
-
+```
 - Customer geographic distribution
 - Order fulfillment rates
 - Revenue trends (AOV, GMV, CMV)
 - Customer lifetime value analysis
 
 ## 💳 Payment Analysis
-Payment type preferences
-
-Transaction volume trends
-
-Installment payment impact
-
-Payment method segmentation
+- Payment type preferences
+- Transaction volume trends
+- Installment payment impact
+- Payment method segmentation
 
 ## 📦 Product Performance
+```sql
 -- Top Performing Products
 SELECT 
     product_id,
@@ -71,7 +69,7 @@ WHERE order_id IN (
 GROUP BY 1
 ORDER BY 2 DESC
 LIMIT 10;
-
+```
 - Product category performance
 - GMV growth/decline trends
 - Product return analysis
@@ -128,5 +126,4 @@ WHERE table_schema = 'public';
 For questions or collaboration:
 
 GitHub: nchibuzo74
-
-Email: [nwankwochibuzosamuel24@gmail.com]
+Email: nwankwochibuzosamuel24@gmail.com
