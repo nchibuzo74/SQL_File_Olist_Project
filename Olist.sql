@@ -475,3 +475,30 @@ order by sort_bucket_segment asc;
 
 ---GMV Segmentation
 ---It simple means the bucket segment of the GMV per customer count
+---You need a bucket segment to know the contribution of the GMV per customer count
+with bucket_segment as (
+select o.customer_id,
+case when sum(p.payment_value) <= 1000 then 'Low'
+            when sum(p.payment_value) > 1000 and sum(p.payment_value) <= 5000 then 'Medium'
+            else 'High'
+            end as bucket_segment,
+case when sum(p.payment_value) <= 1000 then 1
+            when sum(p.payment_value) > 1000 and sum(p.payment_value) <= 5000 then 2
+            else 3
+            end as sort_bucket_segment,
+case when sum(p.payment_value) <= 1000 then 'Customer with less than $1000 GMV'
+            when sum(p.payment_value) > 1000 and sum(p.payment_value) <= 5000 then 'Customer with $1000 - $5000 GMV'
+            else 'Customer with more than $5000 GMV'
+            end as gmv_segment
+from olist_datasets.Orders as o
+inner join olist_datasets.order_payment as p
+on o.order_id = p.order_id
+where o.order_status = 'delivered'
+group by o.customer_id
+)
+select bucket_segment, gmv_segment, count(distinct(customer_id)) as total_customers
+from bucket_segment
+group by sort_bucket_segment, bucket_segment, gmv_segment
+order by sort_bucket_segment asc;
+
+---Average Number of Order per Customers by Month Year
