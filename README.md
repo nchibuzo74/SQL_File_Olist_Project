@@ -106,10 +106,29 @@ A comprehensive dashboard was developed to visualize:
 ![alt text](image-3.png)
 ![alt text](image-4.png)
 
+
 ## ![Payment Analysis](https://img.shields.io/badge/Payment_Analysis-FF6B00?style=for-the-badge&logo=google-analytics&logoColor=white)
 ![alt text](image-5.png)
 ![alt text](image-6.png)
 ![alt text](image-7.png)
+
+
+## ![Product Analysis](https://img.shields.io/badge/Product_Analysis-FF6B00?style=for-the-badge&logo=google-analytics&logoColor=white)
+![alt text](image-8.png)
+![alt text](image-9.png)
+
+
+## ![Seller & Logistic Analysis](https://img.shields.io/badge/Seller_Logistics_Analysis-FF6B00?style=for-the-badge&logo=google-analytics&logoColor=white)
+![alt text](image-10.png)
+![alt text](image-11.png)
+![alt text](image-12.png)
+![alt text](image-13.png)
+
+
+## ![Review Analysis](https://img.shields.io/badge/Review_Analysis-FF6B00?style=for-the-badge&logo=google-analytics&logoColor=white)
+![alt text](image-14.png)
+![alt text](image-15.png)
+
 
 ## 🚀 Getting Started
 1. Database Setup:
@@ -136,3 +155,4 @@ For questions or collaboration:
 
 GitHub: nchibuzo74
 Email: nwankwochibuzosamuel24@gmail.com
+LinkedIn: https://www.linkedin.com/in/chibuzo-nwankwo-baa756133
