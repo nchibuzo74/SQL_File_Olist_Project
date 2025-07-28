@@ -34,6 +34,7 @@ SQL_File_Olist_Project/
 
 ## 🔍 Key Analysis Areas
 
+
 ## 📈 Sales & Customer Insights
 
 ```sql
