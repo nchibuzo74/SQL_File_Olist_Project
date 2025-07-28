@@ -99,7 +99,7 @@ A comprehensive dashboard was developed to visualize:
 - Time-series trend analysis
 - Customer/seller segmentation
 
-## ![ScreenshotsonCustomerandSalesAnalysis](https://img.shields.io/badge/Screenshots-Customer-and-Sales-Analysis)
+## ![Customer & Sales Analysis](https://img.shields.io/badge/Customer_Sales_Analysis-FF6B00?style=for-the-badge&logo=google-analytics&logoColor=white)
 ![alt text](image.png)
 ![alt text](image-1.png)
 ![alt text](image-2.png)
