@@ -104,7 +104,12 @@ A comprehensive dashboard was developed to visualize:
 ![alt text](image-1.png)
 ![alt text](image-2.png)
 ![alt text](image-3.png)
+![alt text](image-4.png)
 
+## ![Payment Analysis](https://img.shields.io/badge/Payment_Analysis-FF6B00?style=for-the-badge&logo=google-analytics&logoColor=white)
+![alt text](image-5.png)
+![alt text](image-6.png)
+![alt text](image-7.png)
 
 ## 🚀 Getting Started
 1. Database Setup:
