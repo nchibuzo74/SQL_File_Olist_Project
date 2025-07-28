@@ -34,6 +34,7 @@ SQL_File_Olist_Project/
 ## 🔍 Key Analysis Areas
 
 ## 📈 Sales & Customer Insights
+
 ```sql
 -- Example Query: Total Delivered Revenue
 SELECT 
@@ -45,6 +46,7 @@ JOIN order_items USING(order_id)
 WHERE order_status = 'delivered'
 GROUP BY 1;
 ```
+
 - Customer geographic distribution
 - Order fulfillment rates
 - Revenue trends (AOV, GMV, CMV)
@@ -57,6 +59,7 @@ GROUP BY 1;
 - Payment method segmentation
 
 ## 📦 Product Performance
+
 ```sql
 -- Top Performing Products
 SELECT 
@@ -70,6 +73,7 @@ GROUP BY 1
 ORDER BY 2 DESC
 LIMIT 10;
 ```
+
 - Product category performance
 - GMV growth/decline trends
 - Product return analysis
