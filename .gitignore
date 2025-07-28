@@ -89,8 +89,10 @@ reports/sensitive-data.pbix
 # Actual Power BI files with real data
 *.pbix
 
-# Keep templates
+# Keep templates and documentation
 !*-template.pbit
+!README.md
+!setup-guide.md
 
 ### Jupyter Notebook ###
 .ipynb_checkpoints
