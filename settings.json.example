@@ -1,6 +1,0 @@
-{
-  "sqltools.connections": [{
-    "name": "SAMPLE_DONT_COMMIT",
-    "password": "REPLACE_WITH_REAL_PASSWORD"
-  }]
-}
