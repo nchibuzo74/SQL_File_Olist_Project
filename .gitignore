@@ -1,28 +1,102 @@
-# VSCode workspace files
+# .gitignore for Olist E-Commerce Analytics Project
+
+### IDE Specific ###
+# VS Code
 .vscode/
-*.code-workspace
+!.vscode/settings.json.example  # Optional: Keep example config
+.vscode/settings.json           # Exclude local settings
 
-# Database credentials and configuration
+### Database ###
+# Credentials
 *.env
-config.json
-database.ini
-db.config
-credentials.json
-*.config.js
-connection_string.txt
-
-# Logs
-*.log
-
-# Environment variables
-.env
 .env.local
 .env.*.local
+config.ini
+credentials.*
+secrets.yml
+connection_strings.txt
+pgpass.conf
 
-# Temporary files
-*.tmp
-*.temp
+# PostgreSQL
+*.pid
+*.lock
+postgresql/data/
+postgresql/logs/
 
-# Operating System files
+### Python ###
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+ENV/
+env/
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+### OS Generated ###
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+
+### Logs and temp files ###
+*.log
+*.sqlite
+*.tmp
+*.bak
+*.swp
+*~
+
+### Power BI ###
+*.pbix
+*.pbip
+*.pbit
+*.bit
+*.pbi
+
+### Jupyter Notebook ###
+.ipynb_checkpoints
+
+### System Files ###
+*.exe
+*.dll
+*.so
+*.dylib
+
+### Project Specific ###
+# Exclude large data files (if any)
+*.csv
+*.xlsx
+*.jsonl
+/data/
+!/data/README.md  # Keep data README if exists
+
+# Exclude query output files
+*.output
+*.results
+
+# Keep documentation
+!*.md
+!*.txt
