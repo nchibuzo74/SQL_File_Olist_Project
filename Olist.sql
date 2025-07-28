@@ -476,29 +476,57 @@ order by sort_bucket_segment asc;
 ---GMV Segmentation
 ---It simple means the bucket segment of the GMV per customer count
 ---You need a bucket segment to know the contribution of the GMV per customer count
-with bucket_segment as (
-select o.customer_id,
-case when sum(p.payment_value) <= 1000 then 'Low'
-            when sum(p.payment_value) > 1000 and sum(p.payment_value) <= 5000 then 'Medium'
-            else 'High'
-            end as bucket_segment,
-case when sum(p.payment_value) <= 1000 then 1
-            when sum(p.payment_value) > 1000 and sum(p.payment_value) <= 5000 then 2
-            else 3
-            end as sort_bucket_segment,
-case when sum(p.payment_value) <= 1000 then 'Customer with less than $1000 GMV'
-            when sum(p.payment_value) > 1000 and sum(p.payment_value) <= 5000 then 'Customer with $1000 - $5000 GMV'
-            else 'Customer with more than $5000 GMV'
-            end as gmv_segment
-from olist_datasets.Orders as o
-inner join olist_datasets.order_payment as p
-on o.order_id = p.order_id
-where o.order_status = 'delivered'
-group by o.customer_id
+
+---CTE
+---Customers GMV
+WITH customer_gmv AS (
+  SELECT 
+    o.customer_id,
+    SUM(p.payment_value) AS total_payment
+  FROM olist_datasets.Orders AS o
+  INNER JOIN olist_datasets.order_payment AS p
+    ON o.order_id = p.order_id
+  WHERE o.order_status = 'delivered'
+  GROUP BY o.customer_id
+),
+---Percentiles for GMV
+percentiles AS (
+  SELECT
+    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY total_payment) AS p25,
+    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY total_payment) AS median,
+    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY total_payment) AS p75,
+    PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY total_payment) AS p90
+  FROM customer_gmv
+),
+---Bucket Segment
+bucket_segment AS (
+  SELECT 
+    c.customer_id,
+    c.total_payment,
+    CASE
+      WHEN c.total_payment <= p.p25 THEN 'Low'
+      WHEN c.total_payment > p.p25 AND c.total_payment <= p.median THEN 'Medium'
+      WHEN c.total_payment > p.median AND c.total_payment <= p.p75 THEN 'Medium High'
+      ELSE 'High'
+    END AS bucket_segment,
+    CASE
+      WHEN c.total_payment <= p.p25 THEN 1
+      WHEN c.total_payment > p.p25 AND c.total_payment <= p.median THEN 2
+      WHEN c.total_payment > p.median AND c.total_payment <= p.p75 THEN 3
+      ELSE 4
+    END AS sort_order
+  FROM customer_gmv as c
+  CROSS JOIN percentiles as p
 )
-select bucket_segment, gmv_segment, count(distinct(customer_id)) as total_customers
-from bucket_segment
-group by sort_bucket_segment, bucket_segment, gmv_segment
-order by sort_bucket_segment asc;
+---Final Result
+SELECT
+  bucket_segment,
+  COUNT(DISTINCT customer_id) AS customer_count,
+  MIN(total_payment) AS min_value,
+  MAX(total_payment) AS max_value,
+  AVG(total_payment) AS avg_value
+FROM bucket_segment
+GROUP BY sort_order, bucket_segment
+ORDER BY sort_order;
 
 ---Average Number of Order per Customers by Month Year
