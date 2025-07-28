@@ -23,13 +23,14 @@ This project analyzes Olist's Brazilian e-commerce dataset to derive actionable 
   - GitHub for version control
 
 ## 📂 Repository Structure
+```markdown
 SQL_File_Olist_Project/
 ├── Olist.sql # Main SQL script with all queries
 ├── Data Dictionary.doc # Comprehensive data documentation
 ├── .vscode/ # VS Code configuration
 ├── .gitignore # Version control exclusions
 └── README.md # Project documentation
-
+```
 
 ## 🔍 Key Analysis Areas
 
