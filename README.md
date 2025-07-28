@@ -99,7 +99,7 @@ A comprehensive dashboard was developed to visualize:
 - Time-series trend analysis
 - Customer/seller segmentation
 
-Images on Customer and Sales
+![Screenshots on Customer and Sales Analysis](https://img.shields.io/badge/Screenshots-Customer and Sales Analysis)
 ![alt text](image.png)
 ![alt text](image-1.png)
 ![alt text](image-2.png)
