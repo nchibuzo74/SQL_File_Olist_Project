@@ -1,91 +1,28 @@
-# SECURE .gitignore for VS Code + PostgreSQL
-# ==========================================
-
-### Core Protections ###
-# Block ALL VS Code settings except extensions list
-.vscode/*
-!.vscode/extensions.json
-
-# Database credentials (PostgreSQL/SQLTools)
-*.env
-*.env*
-.env.local
-.env.*.local
-secrets/
-credentials/
-connections.json
-*.connections.*
-*config*.json
-*password*
-*secret*
-pgpass.conf
-pg_service.conf
-
-# PostgreSQL runtime files
-postgresql.conf
-pg_hba.conf
-recovery.conf
-*.pid
-*.lock
-*.dump
-*.log
-/data/
-/pgdata/
-
-### VisualStudioCode ###
-# Local History
-.history/
-
-# Built extensions
-*.vsix
-
-# IDE workspace files
+# VSCode workspace files
+.vscode/
 *.code-workspace
 
-### PostgreSQL ###
-# Database clusters
-/postgresql/
-/pgdata/
-
-### Python ###
-# Byte-compiled
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environments
-.venv
-venv/
-env/
-ENV/
-
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Unit test / coverage
-htmlcov/
-.tox/
-.nox/
-.coverage
-*.cover
-
-### Node ###
-# Dependencies
-node_modules/
+# Database credentials and configuration
+*.env
+config.json
+database.ini
+db.config
+credentials.json
+*.config.js
+connection_string.txt
 
 # Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
+*.log
 
-### System ###
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Temporary files
+*.tmp
+*.temp
+
+# Operating System files
 .DS_Store
 Thumbs.db
-*.tmp
-*.bak
-*~
-
-### Power BI ###
-*.pbix
-*.bit
