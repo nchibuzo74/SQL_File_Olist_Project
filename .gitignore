@@ -8,6 +8,7 @@
 
 ### Database ###
 # Credentials
+.env
 *.env
 .env.local
 .env.*.local
