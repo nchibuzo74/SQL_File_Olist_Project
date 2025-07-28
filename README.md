@@ -1,104 +1,132 @@
-This project is based on an E-Commerce firm "Olist".
-The object was for the business to track sales performance and how well sales has improved.
+# Olist E-Commerce Analytics Project 🛒📊
 
-The Relational Database Management System (RDBMS) used is PostgreSQL.
-I connected PG Admin (Postgres SQL) to VS Code to commit my code and files to a repository in my Github account.
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-13%2B-blue?logo=postgresql&logoColor=white)
+![PowerBI](https://img.shields.io/badge/Visualization-Power_BI-yellow?logo=powerbi)
+![Status](https://img.shields.io/badge/Status-Completed-success)
 
-The following insights and metrics were drived to improve sales:
+## 📌 Project Overview
+This project analyzes Olist's Brazilian e-commerce dataset to derive actionable insights for improving sales performance. The analysis covers:
+- Customer behavior patterns
+- Payment method effectiveness
+- Product performance metrics
+- Seller/logistics efficiency
+- Customer satisfaction trends
 
----Customer and Sales Analysis:
-1. Total Customer State
-2. Total Customer City
-3. Total Customers
-4. Total Delivered Order
-5. Total Delivered Revenue and Average Yearly Revenue
-6. Total Products
-7. Average Monthly Revenue
-8. AOV
-9. CMV
-10. Customers by State
-11. Order Trend
-12. GMV Trend
-13. Percentage Order Fulfilement
-14. Average SKU Per Order
-15. Average Item Size per Order
-16. Order Item Contribution per Order
-17. GMV Segmentation
-18. Average Number of Order per Customers by Month Year
-19. Weekly Delivery Time
-20. Delivery Effectiveness - Days Taken
-21. Top 10 Customers
+🔗 **Repository Link:** [https://github.com/nchibuzo74/SQL_File_Olist_Project](https://github.com/nchibuzo74/SQL_File_Olist_Project)
 
----Payment Analysis:
-1. Total Payment Type
-2. Payment Count
-3. Mix Payment Count
-4. Non Mix Payment Count
-5. Total Payment Amount
-6. Mix Payment Amount
-7. Non Mix Payment Amount
-8. Monthly Payment Count (Transaction)
-9. Mix Monthly Payment Count (Transaction)
-10. Non Mix Monthly Payment Count (Transaction)
-11. Payment Amount Trend
-12. Payment Type Ratio Trend
-13. Payment Type Mix Ratio Trend
-14. Payment Amount Segmentation
-15. Mixed Payment Amount Segmentation
-16. Non Mixed Payment Amount Segmentation
-17. Payment Count Segmentation
-18. Payment Installment Segmentation
+## 🛠️ Technical Implementation
+- **Database:** PostgreSQL (RDBMS)
+- **Tools Used:**
+  - PG Admin for database management
+  - VS Code for SQL development
+  - Power BI for dashboard visualization
+  - GitHub for version control
 
----Product Analysis:
-1. Total Products
-2. Total Delivered GMV (Revenue)
-3. Top Delivered Product ID and it's GMV
-4. Worst Cancelled Product ID and it's GMV
-5. Top Delivered Category and it's GMV
-6. Most Popular Category
-7. Worst category
-8. Delivered GMV per Product
-9. Product Contribution
-10. Top 20 Cancelled Product per Month Year
-11. Top 20 Delivered GMV per Category
-12. GMV MoM Growth/Decline
+## 📂 Repository Structure
+SQL_File_Olist_Project/
+├── Olist.sql # Main SQL script with all queries
+├── Data Dictionary.doc # Comprehensive data documentation
+├── .vscode/ # VS Code configuration
+├── .gitignore # Version control exclusions
+└── README.md # Project documentation
 
----Seller and Logistic Analysis:
-1. Total Seller State
-2. Total Seller City
-3. Total Sellers
-4. Total Delivered Order
-5. Total Delivered GMV
-6. Total Products Delivered
-7. Top Seller ID
-8. Total Delivered GMV
-9. Worst Seller ID
-10. Top Cancelled GMV
-11. Seller with Most Fulfilled Customers
-12. Seller per Region
-13. Sellers Contribution
-14. Sellers Segmentation
-15. Distribution of Sellers Rating
-16. Delivered Order Delay Analysis
-17. Percentage Order Delay Penetration
-18. Delivery Performance by Segment
-19. Days Delivered Outlier
-20. Delivery Day Outlier Analysis
-21. Sellers Engagement Analysis
 
----Review Analysis:
-1. Average Order per Day
-2. Total Reviews
-3. Orders with Positive Rating
-4. Customers with Positive Rating
-5. Customers with Negative Rating
-6. Average Rating per Day
-7. CSAT Score
-8. Total Orders Rated by Date
-9. Total Orders by rating
-10. Daily Trend of Average Rating
-11. CSAT Score by State
-12. Monthly CSAT Score
-13. Sentiment/Reponse Rating
+## 🔍 Key Analysis Areas
 
-A dashboard was created using Power BI to showcase the insights derived from the dataset.
+### 📈 Sales & Customer Insights
+```sql
+-- Example Query: Total Delivered Revenue
+SELECT 
+    EXTRACT(YEAR FROM order_purchase_timestamp) AS year,
+    SUM(price) AS total_revenue,
+    AVG(SUM(price)) OVER () AS avg_yearly_revenue
+FROM orders
+JOIN order_items USING(order_id)
+WHERE order_status = 'delivered'
+GROUP BY 1;
+
+- Customer geographic distribution
+- Order fulfillment rates
+- Revenue trends (AOV, GMV, CMV)
+- Customer lifetime value analysis
+
+💳 Payment Analysis
+Payment type preferences
+
+Transaction volume trends
+
+Installment payment impact
+
+Payment method segmentation
+
+📦 Product Performance
+-- Top Performing Products
+SELECT 
+    product_id,
+    SUM(price) AS total_gmv
+FROM order_items
+WHERE order_id IN (
+    SELECT order_id FROM orders WHERE order_status = 'delivered'
+)
+GROUP BY 1
+ORDER BY 2 DESC
+LIMIT 10;
+
+- Product category performance
+- GMV growth/decline trends
+- Product return analysis
+- SKU efficiency metrics
+
+🚚 Seller & Logistics
+- Seller performance by region
+- Delivery time optimization
+- Order fulfillment efficiency
+- Seller rating distribution
+
+⭐ Review Analysis
+- CSAT score calculation
+- Sentiment analysis
+- Rating trends over time
+- Customer satisfaction by region
+
+📊 Power BI Dashboard
+A comprehensive dashboard was developed to visualize:
+
+- Sales performance metrics
+- Geographic distribution maps
+- Time-series trend analysis
+- Customer/seller segmentation
+
+Images on Customer and Sales
+![alt text](image.png)
+![alt text](image-1.png)
+![alt text](image-2.png)
+![alt text](image-3.png)
+
+🚀 Getting Started
+1. Database Setup:
+psql -U username -d olist -f Olist.sql
+
+2. Data Exploration:
+-- View available tables
+SELECT table_name 
+FROM information_schema.tables
+WHERE table_schema = 'public';
+
+3. Connect Power BI:
+- Use PostgreSQL connector
+- Import the tables for visualization
+
+
+📚 Resources
+- Olist Dataset Documentation
+- PostgreSQL Documentation
+- Power BI Documentation
+
+✉️ Contact
+For questions or collaboration:
+
+GitHub: nchibuzo74
+
+Email: [nwankwochibuzosamuel24@gmail.com]
+
