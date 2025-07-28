@@ -93,11 +93,16 @@ LIMIT 10;
 
 ## 📊 Power BI Dashboard
 A comprehensive dashboard was developed to visualize:
-
-- Sales performance metrics
+- Customer & Sales performance metrics
+- Payment metrics
+- Product metrics
+- Seller & Logistics metrics
+- Review metrics
 - Geographic distribution maps
 - Time-series trend analysis
 - Customer/seller segmentation
+
+The Power BI Dashboard is offline. Kindly contact me if you need a copy. My contact details are below
 
 ## ![Customer & Sales Analysis](https://img.shields.io/badge/Customer_Sales_Analysis-FF6B00?style=for-the-badge&logo=google-analytics&logoColor=white)
 ![alt text](image.png)
