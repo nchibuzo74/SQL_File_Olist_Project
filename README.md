@@ -33,7 +33,7 @@ SQL_File_Olist_Project/
 
 ## 🔍 Key Analysis Areas
 
-### 📈 Sales & Customer Insights
+## 📈 Sales & Customer Insights
 ```sql
 -- Example Query: Total Delivered Revenue
 SELECT 
@@ -50,7 +50,7 @@ GROUP BY 1;
 - Revenue trends (AOV, GMV, CMV)
 - Customer lifetime value analysis
 
-💳 Payment Analysis
+## 💳 Payment Analysis
 Payment type preferences
 
 Transaction volume trends
@@ -59,7 +59,7 @@ Installment payment impact
 
 Payment method segmentation
 
-📦 Product Performance
+## 📦 Product Performance
 -- Top Performing Products
 SELECT 
     product_id,
@@ -77,19 +77,19 @@ LIMIT 10;
 - Product return analysis
 - SKU efficiency metrics
 
-🚚 Seller & Logistics
+## 🚚 Seller & Logistics
 - Seller performance by region
 - Delivery time optimization
 - Order fulfillment efficiency
 - Seller rating distribution
 
-⭐ Review Analysis
+## ⭐ Review Analysis
 - CSAT score calculation
 - Sentiment analysis
 - Rating trends over time
 - Customer satisfaction by region
 
-📊 Power BI Dashboard
+## 📊 Power BI Dashboard
 A comprehensive dashboard was developed to visualize:
 
 - Sales performance metrics
@@ -103,7 +103,8 @@ Images on Customer and Sales
 ![alt text](image-2.png)
 ![alt text](image-3.png)
 
-🚀 Getting Started
+
+## 🚀 Getting Started
 1. Database Setup:
 psql -U username -d olist -f Olist.sql
 
@@ -118,15 +119,14 @@ WHERE table_schema = 'public';
 - Import the tables for visualization
 
 
-📚 Resources
+## 📚 Resources
 - Olist Dataset Documentation
 - PostgreSQL Documentation
 - Power BI Documentation
 
-✉️ Contact
+## ✉️ Contact
 For questions or collaboration:
 
 GitHub: nchibuzo74
 
 Email: [nwankwochibuzosamuel24@gmail.com]
-
