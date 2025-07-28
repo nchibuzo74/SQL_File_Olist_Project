@@ -123,7 +123,7 @@ The Power BI Dashboard is offline. Kindly contact me if you need a copy. My cont
 ![alt text](image-9.png)
 
 
-## ![Seller & Logistic Analysis](https://img.shields.io/badge/Seller_Logistics_Analysis-FF6B00?style=for-the-badge&logo=google-analytics&logoColor=white)
+## ![Seller & Logistic Analysis](https://img.shields.io/badge/Seller_Logistic_Analysis-FF6B00?style=for-the-badge&logo=google-analytics&logoColor=white)
 ![alt text](image-10.png)
 ![alt text](image-11.png)
 ![alt text](image-12.png)
