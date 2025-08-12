@@ -530,3 +530,90 @@ GROUP BY sort_order, bucket_segment
 ORDER BY sort_order;
 
 ---Average Number of Order per Customers by Month Year
+select extract(year from o.order_purchase_timestamp) as year_,
+extract(month from o.order_purchase_timestamp) as month_,
+to_char(o.order_purchase_timestamp, 'Month') as month_name,
+count(distinct(o.order_id)) as total_orders,
+count(distinct(o.customer_id)) as total_customers,
+(count(distinct(o.order_id))::float) / (count(distinct(o.customer_id))::float) as average_order_per_customer
+from olist_datasets.orders as o
+where o.order_status = 'delivered'
+group by extract(year from o.order_purchase_timestamp),
+extract(month from o.order_purchase_timestamp),
+to_char(o.order_purchase_timestamp, 'Month')
+order by extract(year from o.order_purchase_timestamp) asc,
+extract(month from o.order_purchase_timestamp) asc;
+
+---Weekly Delivery Time
+select extract(year from o.order_purchase_timestamp) as year_,
+extract(week from o.order_purchase_timestamp) as week_,
+to_char(o.order_purchase_timestamp, 'Week') as week_name,
+avg(extract(day from (o.order_delivered_customer_date - o.order_purchase_timestamp))) as average_delivery_time,
+max(extract(day from (o.order_delivered_customer_date - o.order_purchase_timestamp))) as max_delivery_time,
+count(distinct(o.order_id)) as total_orders
+from olist_datasets.orders as o
+where o.order_status = 'delivered'
+group by extract(year from o.order_purchase_timestamp),
+extract(week from o.order_purchase_timestamp),
+to_char(o.order_purchase_timestamp, 'Week')
+order by extract(year from o.order_purchase_timestamp) asc,
+extract(week from o.order_purchase_timestamp) asc;
+
+---Delivery Effectiveness - Days Taken
+SELECT 
+    EXTRACT(YEAR FROM o.order_purchase_timestamp) AS year_,
+    EXTRACT(MONTH FROM o.order_purchase_timestamp) AS month_,
+    TO_CHAR(o.order_purchase_timestamp, 'Month') AS month_name,
+    CASE 
+        WHEN EXTRACT(DAY FROM o.order_purchase_timestamp) <= 7 THEN 'Week 1'
+        WHEN EXTRACT(DAY FROM o.order_purchase_timestamp) <= 14 THEN 'Week 2'
+        WHEN EXTRACT(DAY FROM o.order_purchase_timestamp) <= 21 THEN 'Week 3'
+        ELSE 'Week 4' 
+    END AS purchase_week_of_month,
+    CASE 
+        WHEN o.order_delivered_customer_date IS NULL THEN 'Not delivered'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) <= 1 THEN '1 day'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 2 THEN '2 days'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 3 THEN '3 days'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 4 THEN '4 days'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 5 THEN '5 days'
+        ELSE '> 5 days' 
+    END AS days_taken,
+    COUNT(DISTINCT o.order_id) AS total_orders
+FROM olist_datasets.orders AS o
+WHERE o.order_status = 'delivered'
+GROUP BY 
+    EXTRACT(YEAR FROM o.order_purchase_timestamp),
+    EXTRACT(MONTH FROM o.order_purchase_timestamp),
+    TO_CHAR(o.order_purchase_timestamp, 'Month'),
+    CASE 
+        WHEN EXTRACT(DAY FROM o.order_purchase_timestamp) <= 7 THEN 'Week 1'
+        WHEN EXTRACT(DAY FROM o.order_purchase_timestamp) <= 14 THEN 'Week 2'
+        WHEN EXTRACT(DAY FROM o.order_purchase_timestamp) <= 21 THEN 'Week 3'
+        ELSE 'Week 4' 
+    END,
+    CASE 
+        WHEN o.order_delivered_customer_date IS NULL THEN 'Not delivered'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) <= 1 THEN '1 day'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 2 THEN '2 days'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 3 THEN '3 days'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 4 THEN '4 days'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 5 THEN '5 days'
+        ELSE '> 5 days' 
+    END
+ORDER BY 
+    EXTRACT(YEAR FROM o.order_purchase_timestamp) ASC,
+    EXTRACT(MONTH FROM o.order_purchase_timestamp) ASC;
+
+---Top 10 Customers
+select c.customer_id, c.customer_city, c.customer_state, count(distinct(o.order_id)) as total_orders,
+sum(p.payment_value) as total_revenue
+from olist_datasets.customers as c
+inner join olist_datasets.orders as o
+on c.customer_id = o.customer_id
+inner join olist_datasets.order_payment as p
+on o.order_id = p.order_id
+where o.order_status = 'delivered'
+group by c.customer_id, c.customer_city, c.customer_state
+order by total_revenue desc
+limit 10;
