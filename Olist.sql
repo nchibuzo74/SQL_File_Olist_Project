@@ -36,7 +36,7 @@ from olist_datasets.customers;
 ---Check for duplicate customers
 SELECT customer_id, count(customer_id) as customer_count
 from olist_datasets.customers
-group by customer_id
+group by customer_id  
 having count(customer_id) > 1;
 
 ----Create Geolocation
@@ -617,3 +617,39 @@ where o.order_status = 'delivered'
 group by c.customer_id, c.customer_city, c.customer_state
 order by total_revenue desc
 limit 10;
+
+/*
+---Payment Analysis:
+1. Total Payment Type
+2. Payment Count
+3. Mix Payment Count
+4. Non Mix Payment Count
+5. Total Payment Amount
+6. Mix Payment Amount
+7. Non Mix Payment Amount
+8. Monthly Payment Count (Transaction)
+9. Mix Monthly Payment Count (Transaction)
+10. Non Mix Monthly Payment Count (Transaction)
+11. Payment Amount Trend
+12. Payment Type Ratio Trend
+13. Payment Type Mix Ratio Trend
+14. Payment Amount Segmentation
+15. Mixed Payment Amount Segmentation
+16. Non Mixed Payment Amount Segmentation
+17. Payment Count Segmentation
+18. Payment Installment Segmentation
+*/
+
+---Total Payment Type
+select count(distinct(p.payment_type)) as total_payment_type
+from olist_datasets.order_payment as p
+inner join olist_datasets.orders as o
+on p.order_id = o.order_id
+where o.order_status = 'delivered';
+
+---2. Payment Count
+select count(p.payment_type) as total_payment_count
+from olist_datasets.order_payment as p
+inner join olist_datasets.orders as o
+on p.order_id = o.order_id
+where o.order_status = 'delivered';
