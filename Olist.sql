@@ -12,6 +12,8 @@
 - Order Payment
 - Order Items
 - Order Reviews
+
+3. Add constraint and index to the tables
 */
 ----------------------------------------------------------------------------
 
@@ -25,9 +27,16 @@ customer_city varchar(50) not null,
 customer_state varchar(2) not null
 );
 
+---Create index on "customer_id" in customers table
+create index idx_customer_id on olist_datasets.customers(customer_id);
+
+---Create a constraint on Customers table. Set order_id as foreign key
+alter table olist_datasets.order_payment add constraint fk_order_id foreign key(order_id) references olist_datasets.orders (order_id);
+
 ---Retrieve the customer data
 select *
 from olist_datasets.customers;
+
 
 ---Unique Customers
 SELECT count(distinct(customer_id)) as unique_customers
@@ -47,6 +56,57 @@ geolocation_lng float not null,
 geolocation_city varchar(100) not null,
 geolocation_state varchar(50) not null
 );
+
+---Create a two more tables from Geolocation. Geolocation can be normalize to 3NF (third normalize form)
+
+-----Create a Geolocation Zip_Code by merging key columns from customers and sellers tables.
+drop table if exists olist_datasets.geolocation_zip_code;
+select distinct customer_zip_code_prefix
+into olist_datasets.geolocation_zip_code
+from olist_datasets.customers
+
+union
+
+select distinct seller_zip_code_prefix
+from olist_datasets.sellers;
+
+---Set constraint to the geolocation_zip_code and rename the column
+---rename the column
+alter table olist_datasets.geolocation_zip_code rename column customer_zip_code_prefix to zip_code_prefix;
+
+---set the constraint
+alter table olist_datasets.geolocation_zip_code add constraint pk_zip_code_prefix primary key(zip_code_prefix);
+
+---Set index to the table
+create index idx_zip_code_prefix on olist_datasets.geolocation_zip_code(zip_code_prefix);
+
+---create a table with Geolocation City and State
+drop table if exists olist_datasets.geolocation_city_state;
+select distinct customer_city as city, customer_state as state
+into olist_datasets.geolocation_city_state
+from olist_datasets.customers
+
+union
+
+select distinct seller_city, seller_state
+from olist_datasets.sellers;
+
+---create a composite key (i.e. concatenate city and state)
+alter table olist_datasets.geolocation_city_state add column city_state varchar(200);
+
+---add records to the city_state column
+update olist_datasets.geolocation_city_state
+set city_state = concat(city,'-',state)
+where city_state is null;
+
+---Set constraint (primary key) to the table on city_state.
+alter table olist_datasets.geolocation_city_state add constraint pk_city_state primary key(city_state);
+
+---Set index on the table
+create index idx_city_state on olist_datasets.geolocation_city_state(city_state);
+
+---Retrieve the table
+select * from olist_datasets.geolocation_city_state;
 
 ----Retrieve the geolocation data
 select *
@@ -175,6 +235,9 @@ product_height_cm int,
 product_width_cm int
 );
 
+---Create index on "product_id" in product table
+create index idx_product_id on olist_datasets.product(product_id);
+
 ---Retrieve the table
 select * from olist_datasets.product;
 
@@ -190,6 +253,9 @@ product_category_name varchar(100) primary key,
 product_category_name_english varchar(100) not null
 );
 
+---Create index on "product_category_name" in category table
+create index idx_product_category_name on olist_datasets.product_category(product_category_name);
+
 ---Retrieve the table
 select * from olist_datasets.product_category;
 
@@ -200,6 +266,9 @@ seller_zip_code_prefix varchar(50) not null,
 seller_city varchar(100) not null,
 seller_state varchar(2) not null
 );
+
+---Create index on "seller_id" in Seller table
+create index idx_seller_id on olist_datasets.sellers(seller_id);
 
 ---Retrieve the table
 select * from olist_datasets.sellers;
@@ -216,6 +285,15 @@ order_delivered_customer_date timestamp,
 order_estimated_delivery_date timestamp
 );
 
+---Create Index on the "order_id" in the orders table
+create index idx_order_id on olist_datasets.orders(order_id);
+
+---Create Index on the "order_status" in the orders table
+create index idx_order_status on olist_datasets.orders(order_status);
+
+---Create a constraint on Orders table. Set customer_id as foreign key
+alter table olist_datasets.orders add constraint fk_customer_id foreign key(customer_id) references olist_datasets.customers (customer_id);
+
 ---Retrieve the data
 select * from olist_datasets.orders;
 
@@ -231,6 +309,9 @@ payment_value float not null
 ---Alter the order payment table, alter the payment_type column, and extend the lenght of variable character
 alter table olist_datasets.order_payment alter column payment_type type varchar(20);
 
+---Create a constraint on Payment table. Set order_id as foreign key
+alter table olist_datasets.order_payment add constraint fk_order_id foreign key(order_id) references olist_datasets.orders (order_id);
+
 ---Retrieve the table
 select * from olist_datasets.order_payment;
 
@@ -243,7 +324,14 @@ seller_id varchar(100) not null,
 shipping_limit_date timestamp not null,
 price float not null,
 freight_value float not null
-);
+);  
+
+---Create a constraint on Item table. Set order_id as foreign key
+alter table olist_datasets.order_items add constraint fk_order_id foreign key(order_id) references olist_datasets.orders (order_id);
+
+---Create a constraint on Orders table. Set seller_id as foreign key
+alter table olist_datasets.order_items add constraint fk_seller_id foreign key(seller_id) references olist_datasets.sellers (seller_id);
+
 
 ---Retrieve the table
 select * from olist_datasets.order_items;
@@ -259,8 +347,13 @@ review_creation_date timestamp not null,
 review_answer_timestamp timestamp not null
 );
 
+---Create a constraint on Reviews table. Set order_id as foreign key
+alter table olist_datasets.order_reviews add constraint fk_order_id foreign key(order_id) references olist_datasets.orders (order_id);
+
 --Retrieve the table
 select * from olist_datasets.order_reviews;
+
+
 
 ------------------------------------------------------------------------
 ---Solutions to Business Questions:
@@ -685,7 +778,7 @@ group by p.order_id
 select sum(case when count_of_payment_type = 1 then count_of_payment_type else null end) as mix_payment_count
 from aggregation_payment_type;
 
----snity check
+---sanity check
 with cte as (
 select p.order_id,
     count(distinct(p.payment_type)) as count_of_payment_type
@@ -696,4 +789,11 @@ where o.order_status = 'delivered'
 group by p.order_id
 )
 select sum(count_of_payment_type) as total_payment_count
-from cte
+from cte;
+
+---5. Total Payment Amount
+select sum(p.payment_value) as total_payment
+from olist_datasets.order_payment as p
+inner join olist_datasets.orders as o
+on p.order_id = o.order_id
+where o.order_status = 'delivered';
