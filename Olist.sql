@@ -711,6 +711,17 @@ group by c.customer_id, c.customer_city, c.customer_state
 order by total_revenue desc
 limit 10;
 
+----What is the average time between first and second purchase?
+---get all customers order
+with customer_order as (
+select customer_id, order_id, min(order_purchase_timestamp:: date) as earliest_purchase_date,
+max(order_purchase_timestamp:: date) as second_purchase_date
+from olist_datasets.orders
+group by customer_id, order_id
+having count(distinct(order_id)) = 2
+);
+
+
 /*
 ---Payment Analysis:
 1. Total Payment Type
@@ -794,6 +805,35 @@ from cte;
 ---5. Total Payment Amount
 select sum(p.payment_value) as total_payment
 from olist_datasets.order_payment as p
-inner join olist_datasets.orders as o
+inner join olist_datasets.orders as o  
 on p.order_id = o.order_id
 where o.order_status = 'delivered';
+
+
+----6 & 7. Mix and Non Mix Payment Amount
+----Get all delivered mix payment by order
+with order_payment_status as (
+select o.order_id, count(distinct(p.payment_type)) as payment_type_count,
+string_agg(p.payment_type,' | ') as list_of_payment_type,
+ sum(p.payment_value) as total_payment,
+ count(p.order_id) as payment_sequence_,
+ case when count(distinct(p.payment_type)) > 1 then 'Mix' else 'Non Mix' end as payment_status
+from olist_datasets.order_payment as p
+inner join olist_datasets.orders as o  
+on p.order_id = o.order_id
+where o.order_status = 'delivered'
+group by o.order_id
+---order by count(distinct(p.payment_type)) desc;
+)
+---Final block: get all mix payment amount
+select payment_status, sum(total_payment) as mix_payment_amount
+from order_payment_status
+where payment_status = 'Mix'
+group by payment_status
+
+union all
+
+select payment_status, sum(total_payment) as non_mix_payment_amount
+from order_payment_status
+where payment_status = 'Non Mix'
+group by payment_status;
