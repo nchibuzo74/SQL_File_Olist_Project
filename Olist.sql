@@ -12,6 +12,8 @@
 - Order Payment
 - Order Items
 - Order Reviews
+
+3. Add constraint and index to the tables
 */
 ----------------------------------------------------------------------------
 
@@ -25,9 +27,16 @@ customer_city varchar(50) not null,
 customer_state varchar(2) not null
 );
 
+---Create index on "customer_id" in customers table
+create index idx_customer_id on olist_datasets.customers(customer_id);
+
+---Create a constraint on Customers table. Set order_id as foreign key
+alter table olist_datasets.order_payment add constraint fk_order_id foreign key(order_id) references olist_datasets.orders (order_id);
+
 ---Retrieve the customer data
 select *
 from olist_datasets.customers;
+
 
 ---Unique Customers
 SELECT count(distinct(customer_id)) as unique_customers
@@ -36,7 +45,7 @@ from olist_datasets.customers;
 ---Check for duplicate customers
 SELECT customer_id, count(customer_id) as customer_count
 from olist_datasets.customers
-group by customer_id
+group by customer_id  
 having count(customer_id) > 1;
 
 ----Create Geolocation
@@ -47,6 +56,57 @@ geolocation_lng float not null,
 geolocation_city varchar(100) not null,
 geolocation_state varchar(50) not null
 );
+
+---Create a two more tables from Geolocation. Geolocation can be normalize to 3NF (third normalize form)
+
+-----Create a Geolocation Zip_Code by merging key columns from customers and sellers tables.
+drop table if exists olist_datasets.geolocation_zip_code;
+select distinct customer_zip_code_prefix
+into olist_datasets.geolocation_zip_code
+from olist_datasets.customers
+
+union
+
+select distinct seller_zip_code_prefix
+from olist_datasets.sellers;
+
+---Set constraint to the geolocation_zip_code and rename the column
+---rename the column
+alter table olist_datasets.geolocation_zip_code rename column customer_zip_code_prefix to zip_code_prefix;
+
+---set the constraint
+alter table olist_datasets.geolocation_zip_code add constraint pk_zip_code_prefix primary key(zip_code_prefix);
+
+---Set index to the table
+create index idx_zip_code_prefix on olist_datasets.geolocation_zip_code(zip_code_prefix);
+
+---create a table with Geolocation City and State
+drop table if exists olist_datasets.geolocation_city_state;
+select distinct customer_city as city, customer_state as state
+into olist_datasets.geolocation_city_state
+from olist_datasets.customers
+
+union
+
+select distinct seller_city, seller_state
+from olist_datasets.sellers;
+
+---create a composite key (i.e. concatenate city and state)
+alter table olist_datasets.geolocation_city_state add column city_state varchar(200);
+
+---add records to the city_state column
+update olist_datasets.geolocation_city_state
+set city_state = concat(city,'-',state)
+where city_state is null;
+
+---Set constraint (primary key) to the table on city_state.
+alter table olist_datasets.geolocation_city_state add constraint pk_city_state primary key(city_state);
+
+---Set index on the table
+create index idx_city_state on olist_datasets.geolocation_city_state(city_state);
+
+---Retrieve the table
+select * from olist_datasets.geolocation_city_state;
 
 ----Retrieve the geolocation data
 select *
@@ -175,6 +235,9 @@ product_height_cm int,
 product_width_cm int
 );
 
+---Create index on "product_id" in product table
+create index idx_product_id on olist_datasets.product(product_id);
+
 ---Retrieve the table
 select * from olist_datasets.product;
 
@@ -190,6 +253,9 @@ product_category_name varchar(100) primary key,
 product_category_name_english varchar(100) not null
 );
 
+---Create index on "product_category_name" in category table
+create index idx_product_category_name on olist_datasets.product_category(product_category_name);
+
 ---Retrieve the table
 select * from olist_datasets.product_category;
 
@@ -200,6 +266,9 @@ seller_zip_code_prefix varchar(50) not null,
 seller_city varchar(100) not null,
 seller_state varchar(2) not null
 );
+
+---Create index on "seller_id" in Seller table
+create index idx_seller_id on olist_datasets.sellers(seller_id);
 
 ---Retrieve the table
 select * from olist_datasets.sellers;
@@ -216,6 +285,15 @@ order_delivered_customer_date timestamp,
 order_estimated_delivery_date timestamp
 );
 
+---Create Index on the "order_id" in the orders table
+create index idx_order_id on olist_datasets.orders(order_id);
+
+---Create Index on the "order_status" in the orders table
+create index idx_order_status on olist_datasets.orders(order_status);
+
+---Create a constraint on Orders table. Set customer_id as foreign key
+alter table olist_datasets.orders add constraint fk_customer_id foreign key(customer_id) references olist_datasets.customers (customer_id);
+
 ---Retrieve the data
 select * from olist_datasets.orders;
 
@@ -231,6 +309,9 @@ payment_value float not null
 ---Alter the order payment table, alter the payment_type column, and extend the lenght of variable character
 alter table olist_datasets.order_payment alter column payment_type type varchar(20);
 
+---Create a constraint on Payment table. Set order_id as foreign key
+alter table olist_datasets.order_payment add constraint fk_order_id foreign key(order_id) references olist_datasets.orders (order_id);
+
 ---Retrieve the table
 select * from olist_datasets.order_payment;
 
@@ -243,7 +324,14 @@ seller_id varchar(100) not null,
 shipping_limit_date timestamp not null,
 price float not null,
 freight_value float not null
-);
+);  
+
+---Create a constraint on Item table. Set order_id as foreign key
+alter table olist_datasets.order_items add constraint fk_order_id foreign key(order_id) references olist_datasets.orders (order_id);
+
+---Create a constraint on Orders table. Set seller_id as foreign key
+alter table olist_datasets.order_items add constraint fk_seller_id foreign key(seller_id) references olist_datasets.sellers (seller_id);
+
 
 ---Retrieve the table
 select * from olist_datasets.order_items;
@@ -259,8 +347,13 @@ review_creation_date timestamp not null,
 review_answer_timestamp timestamp not null
 );
 
+---Create a constraint on Reviews table. Set order_id as foreign key
+alter table olist_datasets.order_reviews add constraint fk_order_id foreign key(order_id) references olist_datasets.orders (order_id);
+
 --Retrieve the table
 select * from olist_datasets.order_reviews;
+
+
 
 ------------------------------------------------------------------------
 ---Solutions to Business Questions:
@@ -530,3 +623,217 @@ GROUP BY sort_order, bucket_segment
 ORDER BY sort_order;
 
 ---Average Number of Order per Customers by Month Year
+select extract(year from o.order_purchase_timestamp) as year_,
+extract(month from o.order_purchase_timestamp) as month_,
+to_char(o.order_purchase_timestamp, 'Month') as month_name,
+count(distinct(o.order_id)) as total_orders,
+count(distinct(o.customer_id)) as total_customers,
+(count(distinct(o.order_id))::float) / (count(distinct(o.customer_id))::float) as average_order_per_customer
+from olist_datasets.orders as o
+where o.order_status = 'delivered'
+group by extract(year from o.order_purchase_timestamp),
+extract(month from o.order_purchase_timestamp),
+to_char(o.order_purchase_timestamp, 'Month')
+order by extract(year from o.order_purchase_timestamp) asc,
+extract(month from o.order_purchase_timestamp) asc;
+
+---Weekly Delivery Time
+select extract(year from o.order_purchase_timestamp) as year_,
+extract(week from o.order_purchase_timestamp) as week_,
+to_char(o.order_purchase_timestamp, 'Week') as week_name,
+avg(extract(day from (o.order_delivered_customer_date - o.order_purchase_timestamp))) as average_delivery_time,
+max(extract(day from (o.order_delivered_customer_date - o.order_purchase_timestamp))) as max_delivery_time,
+count(distinct(o.order_id)) as total_orders
+from olist_datasets.orders as o
+where o.order_status = 'delivered'
+group by extract(year from o.order_purchase_timestamp),
+extract(week from o.order_purchase_timestamp),
+to_char(o.order_purchase_timestamp, 'Week')
+order by extract(year from o.order_purchase_timestamp) asc,
+extract(week from o.order_purchase_timestamp) asc;
+
+---Delivery Effectiveness - Days Taken
+SELECT 
+    EXTRACT(YEAR FROM o.order_purchase_timestamp) AS year_,
+    EXTRACT(MONTH FROM o.order_purchase_timestamp) AS month_,
+    TO_CHAR(o.order_purchase_timestamp, 'Month') AS month_name,
+    CASE 
+        WHEN EXTRACT(DAY FROM o.order_purchase_timestamp) <= 7 THEN 'Week 1'
+        WHEN EXTRACT(DAY FROM o.order_purchase_timestamp) <= 14 THEN 'Week 2'
+        WHEN EXTRACT(DAY FROM o.order_purchase_timestamp) <= 21 THEN 'Week 3'
+        ELSE 'Week 4' 
+    END AS purchase_week_of_month,
+    CASE 
+        WHEN o.order_delivered_customer_date IS NULL THEN 'Not delivered'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) <= 1 THEN '1 day'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 2 THEN '2 days'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 3 THEN '3 days'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 4 THEN '4 days'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 5 THEN '5 days'
+        ELSE '> 5 days' 
+    END AS days_taken,
+    COUNT(DISTINCT o.order_id) AS total_orders
+FROM olist_datasets.orders AS o
+WHERE o.order_status = 'delivered'
+GROUP BY 
+    EXTRACT(YEAR FROM o.order_purchase_timestamp),
+    EXTRACT(MONTH FROM o.order_purchase_timestamp),
+    TO_CHAR(o.order_purchase_timestamp, 'Month'),
+    CASE 
+        WHEN EXTRACT(DAY FROM o.order_purchase_timestamp) <= 7 THEN 'Week 1'
+        WHEN EXTRACT(DAY FROM o.order_purchase_timestamp) <= 14 THEN 'Week 2'
+        WHEN EXTRACT(DAY FROM o.order_purchase_timestamp) <= 21 THEN 'Week 3'
+        ELSE 'Week 4' 
+    END,
+    CASE 
+        WHEN o.order_delivered_customer_date IS NULL THEN 'Not delivered'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) <= 1 THEN '1 day'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 2 THEN '2 days'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 3 THEN '3 days'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 4 THEN '4 days'
+        WHEN EXTRACT(DAY FROM (o.order_delivered_customer_date - o.order_purchase_timestamp)) = 5 THEN '5 days'
+        ELSE '> 5 days' 
+    END
+ORDER BY 
+    EXTRACT(YEAR FROM o.order_purchase_timestamp) ASC,
+    EXTRACT(MONTH FROM o.order_purchase_timestamp) ASC;
+
+---Top 10 Customers
+select c.customer_id, c.customer_city, c.customer_state, count(distinct(o.order_id)) as total_orders,
+sum(p.payment_value) as total_revenue
+from olist_datasets.customers as c
+inner join olist_datasets.orders as o
+on c.customer_id = o.customer_id
+inner join olist_datasets.order_payment as p
+on o.order_id = p.order_id
+where o.order_status = 'delivered'
+group by c.customer_id, c.customer_city, c.customer_state
+order by total_revenue desc
+limit 10;
+
+----What is the average time between first and second purchase?
+---get all customers order
+with customer_order as (
+select customer_id, order_id, min(order_purchase_timestamp:: date) as earliest_purchase_date,
+max(order_purchase_timestamp:: date) as second_purchase_date
+from olist_datasets.orders
+group by customer_id, order_id
+having count(distinct(order_id)) = 2
+);
+
+
+/*
+---Payment Analysis:
+1. Total Payment Type
+2. Payment Count
+3. Mix Payment Count
+4. Non Mix Payment Count
+5. Total Payment Amount
+6. Mix Payment Amount
+7. Non Mix Payment Amount
+8. Monthly Payment Count (Transaction)
+9. Mix Monthly Payment Count (Transaction)
+10. Non Mix Monthly Payment Count (Transaction)
+11. Payment Amount Trend
+12. Payment Type Ratio Trend
+13. Payment Type Mix Ratio Trend
+14. Payment Amount Segmentation
+15. Mixed Payment Amount Segmentation
+16. Non Mixed Payment Amount Segmentation
+17. Payment Count Segmentation
+18. Payment Installment Segmentation
+*/
+
+---Total Payment Type
+select count(distinct(p.payment_type)) as total_payment_type
+from olist_datasets.order_payment as p
+inner join olist_datasets.orders as o
+on p.order_id = o.order_id
+where o.order_status = 'delivered';
+
+---2. Payment Count
+select count(p.payment_type) as total_payment_count
+from olist_datasets.order_payment as p
+    inner join olist_datasets.orders as o on p.order_id = o.order_id
+where o.order_status = 'delivered';
+
+---3. Mix Payment Count
+---identify the payment type count per order
+with aggregation_payment_type as (
+select p.order_id,
+    count(distinct(p.payment_type)) as count_of_payment_type,
+    string_agg(p.payment_type, ' | ') as list_of_payment_type --case when count(distinct(p.payment_type)) > 1 then 1 else null end as mix_payment_status
+from olist_datasets.order_payment as p
+    inner join olist_datasets.orders as o on p.order_id = o.order_id
+where o.order_status = 'delivered'
+group by p.order_id
+---order by count(distinct(p.payment_type)) desc;
+)
+--Final block
+select sum(case when count_of_payment_type > 1 then count_of_payment_type else null end) as mix_payment_count
+from aggregation_payment_type;
+
+---4. Non Mix Payment Count
+---identify the payment type count per order
+with aggregation_payment_type as (
+select p.order_id,
+    count(distinct(p.payment_type)) as count_of_payment_type,
+    string_agg(p.payment_type, ' | ') as list_of_payment_type --case when count(distinct(p.payment_type)) > 1 then 1 else null end as mix_payment_status
+from olist_datasets.order_payment as p
+    inner join olist_datasets.orders as o on p.order_id = o.order_id
+where o.order_status = 'delivered'
+group by p.order_id
+---order by count(distinct(p.payment_type)) desc;
+)
+--Final block
+select sum(case when count_of_payment_type = 1 then count_of_payment_type else null end) as mix_payment_count
+from aggregation_payment_type;
+
+---sanity check
+with cte as (
+select p.order_id,
+    count(distinct(p.payment_type)) as count_of_payment_type
+   -- string_agg(p.payment_type, ' | ') as list_of_payment_type --case when count(distinct(p.payment_type)) > 1 then 1 else null end as mix_payment_status
+from olist_datasets.order_payment as p
+    inner join olist_datasets.orders as o on p.order_id = o.order_id
+where o.order_status = 'delivered'
+group by p.order_id
+)
+select sum(count_of_payment_type) as total_payment_count
+from cte;
+
+---5. Total Payment Amount
+select sum(p.payment_value) as total_payment
+from olist_datasets.order_payment as p
+inner join olist_datasets.orders as o  
+on p.order_id = o.order_id
+where o.order_status = 'delivered';
+
+
+----6 & 7. Mix and Non Mix Payment Amount
+----Get all delivered mix payment by order
+with order_payment_status as (
+select o.order_id, count(distinct(p.payment_type)) as payment_type_count,
+string_agg(p.payment_type,' | ') as list_of_payment_type,
+ sum(p.payment_value) as total_payment,
+ count(p.order_id) as payment_sequence_,
+ case when count(distinct(p.payment_type)) > 1 then 'Mix' else 'Non Mix' end as payment_status
+from olist_datasets.order_payment as p
+inner join olist_datasets.orders as o  
+on p.order_id = o.order_id
+where o.order_status = 'delivered'
+group by o.order_id
+---order by count(distinct(p.payment_type)) desc;
+)
+---Final block: get all mix payment amount
+select payment_status, sum(total_payment) as mix_payment_amount
+from order_payment_status
+where payment_status = 'Mix'
+group by payment_status
+
+union all
+
+select payment_status, sum(total_payment) as non_mix_payment_amount
+from order_payment_status
+where payment_status = 'Non Mix'
+group by payment_status;
