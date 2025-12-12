@@ -837,3 +837,19 @@ select payment_status, sum(total_payment) as non_mix_payment_amount
 from order_payment_status
 where payment_status = 'Non Mix'
 group by payment_status;
+
+
+----8. Monthly Payment Count (Transaction)
+select extract(year from o.order_purchase_timestamp) as year_,
+extract(month from o.order_purchase_timestamp) as month_,
+to_char(o.order_purchase_timestamp, 'Month') as month_name,
+count(p.payment_type) as monthly_payment_count
+from olist_datasets.orders as o
+inner join olist_datasets.order_payment as p
+on o.order_id = p.order_id
+where o.order_status = 'delivered'
+group by extract(year from o.order_purchase_timestamp),
+extract(month from o.order_purchase_timestamp),
+to_char(o.order_purchase_timestamp, 'Month')
+order by extract(year from o.order_purchase_timestamp) asc,
+extract(month from o.order_purchase_timestamp) asc;
