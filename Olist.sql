@@ -853,3 +853,54 @@ extract(month from o.order_purchase_timestamp),
 to_char(o.order_purchase_timestamp, 'Month')
 order by extract(year from o.order_purchase_timestamp) asc,
 extract(month from o.order_purchase_timestamp) asc;
+
+
+---9. Mix Monthly Payment Count (Transaction)
+---Get all delivered mix payment by order
+with order_payment_status as (
+select o.order_id, count(distinct(p.payment_type)) as payment_type_count,
+string_agg(p.payment_type,' | ') as list_of_payment_type,
+ count(p.order_id) as payment_sequence_,
+ case when count(distinct(p.payment_type)) > 1 then 'Mix' else 'Non Mix' end as payment_status,
+ extract(year from o.order_purchase_timestamp) as year_,
+ extract(month from o.order_purchase_timestamp) as month_,
+ to_char(o.order_purchase_timestamp, 'Month') as month_name
+from olist_datasets.order_payment as p
+inner join olist_datasets.orders as o  
+on p.order_id = o.order_id
+where o.order_status = 'delivered'
+group by o.order_id, extract(year from o.order_purchase_timestamp),
+ extract(month from o.order_purchase_timestamp),
+ to_char(o.order_purchase_timestamp, 'Month')
+---order by count(distinct(p.payment_type)) desc;
+)
+---Final block: get all mix payment count by month year
+select year_, month_, month_name, sum(case when payment_status = 'Mix' then payment_type_count else null end) as mix_monthly_payment_count
+from order_payment_status
+group by year_, month_, month_name
+order by year_ asc, month_ asc;
+
+---10. Non Mix Monthly Payment Count (Transaction)
+---Get all delivered mix payment by order
+with order_payment_status as (
+select o.order_id, count(distinct(p.payment_type)) as payment_type_count,
+string_agg(p.payment_type,' | ') as list_of_payment_type,
+ count(p.order_id) as payment_sequence_,
+ case when count(distinct(p.payment_type)) > 1 then 'Mix' else 'Non Mix' end as payment_status,
+ extract(year from o.order_purchase_timestamp) as year_,
+ extract(month from o.order_purchase_timestamp) as month_,
+ to_char(o.order_purchase_timestamp, 'Month') as month_name
+from olist_datasets.order_payment as p
+inner join olist_datasets.orders as o  
+on p.order_id = o.order_id
+where o.order_status = 'delivered'
+group by o.order_id, extract(year from o.order_purchase_timestamp),
+ extract(month from o.order_purchase_timestamp),
+ to_char(o.order_purchase_timestamp, 'Month')
+---order by count(distinct(p.payment_type)) desc;
+)
+---Final block: get all non mix payment count by month year
+select year_, month_, month_name, sum(case when payment_status = 'Non Mix' then payment_type_count else null end) as non_mix_monthly_payment_count
+from order_payment_status
+group by year_, month_, month_name
+order by year_ asc, month_ asc;
