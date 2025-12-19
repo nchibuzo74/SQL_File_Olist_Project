@@ -764,7 +764,8 @@ where o.order_status = 'delivered';
 with aggregation_payment_type as (
 select p.order_id,
     count(distinct(p.payment_type)) as count_of_payment_type,
-    string_agg(p.payment_type, ' | ') as list_of_payment_type --case when count(distinct(p.payment_type)) > 1 then 1 else null end as mix_payment_status
+    string_agg(p.payment_type, ' | ') as list_of_payment_type, --case when count(distinct(p.payment_type)) > 1 then 1 else null end as mix_payment_status
+    sum(p.payment_value) as total_payment_value
 from olist_datasets.order_payment as p
     inner join olist_datasets.orders as o on p.order_id = o.order_id
 where o.order_status = 'delivered'
@@ -772,7 +773,8 @@ group by p.order_id
 ---order by count(distinct(p.payment_type)) desc;
 )
 --Final block
-select sum(case when count_of_payment_type > 1 then count_of_payment_type else null end) as mix_payment_count
+select sum(case when count_of_payment_type > 1 then count_of_payment_type else null end) as mix_payment_count,
+sum(case when count_of_payment_type > 1 then total_payment_value else null end) as mix_payment_amount
 from aggregation_payment_type;
 
 
