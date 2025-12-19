@@ -904,3 +904,49 @@ select year_, month_, month_name, sum(case when payment_status = 'Non Mix' then 
 from order_payment_status
 group by year_, month_, month_name
 order by year_ asc, month_ asc;
+
+---11. Payment Amount Trend
+select extract(year from o.order_purchase_timestamp) as year_,
+extract(month from o.order_purchase_timestamp) as month_,
+to_char(o.order_purchase_timestamp, 'Month') as month_name,
+sum(p.payment_value) as total_payment_amount
+from olist_datasets.orders as o
+inner join olist_datasets.order_payment as p
+on o.order_id = p.order_id
+where o.order_status = 'delivered'
+group by extract(year from o.order_purchase_timestamp),
+extract(month from o.order_purchase_timestamp),
+to_char(o.order_purchase_timestamp, 'Month')
+order by extract(year from o.order_purchase_timestamp) asc,
+extract(month from o.order_purchase_timestamp) asc;
+
+---12. Payment Type Ratio Trend
+---CTE: get payment type count by month year
+with payment_type_monthly as (
+select extract(year from o.order_purchase_timestamp) as year_,
+extract(month from o.order_purchase_timestamp) as month_,
+to_char(o.order_purchase_timestamp, 'Month') as month_name,
+p.payment_type,
+count(p.payment_type) as payment_type_count
+from olist_datasets.orders as o
+inner join olist_datasets.order_payment as p
+on o.order_id = p.order_id
+where o.order_status = 'delivered'
+group by extract(year from o.order_purchase_timestamp),
+extract(month from o.order_purchase_timestamp),
+to_char(o.order_purchase_timestamp, 'Month'),
+p.payment_type
+),
+---Final block: get payment type ratio trend
+total_payment_type_monthly as (
+select year_, month_, month_name, sum(payment_type_count) as total_payment_count
+from payment_type_monthly
+group by year_, month_, month_name
+)
+select ptm.year_, ptm.month_, ptm.month_name, ptm.payment_type, ptm.payment_type_count,
+tptm.total_payment_count,
+(ptm.payment_type_count::float / tptm.total_payment_count::float) * 100 as payment_type_ratio_percentage
+from payment_type_monthly as ptm
+inner join total_payment_type_monthly as tptm
+on ptm.year_ = tptm.year_ and ptm.month_ = tptm.month_
+order by ptm.year_ asc, ptm.month_ asc, ptm.payment_type asc;
