@@ -927,7 +927,8 @@ select extract(year from o.order_purchase_timestamp) as year_,
 extract(month from o.order_purchase_timestamp) as month_,
 to_char(o.order_purchase_timestamp, 'Month') as month_name,
 p.payment_type,
-count(p.payment_type) as payment_type_count
+count(p.payment_type) as payment_type_count,
+sum(p.payment_value) as payment_type_amount
 from olist_datasets.orders as o
 inner join olist_datasets.order_payment as p
 on o.order_id = p.order_id
@@ -945,8 +946,53 @@ group by year_, month_, month_name
 )
 select ptm.year_, ptm.month_, ptm.month_name, ptm.payment_type, ptm.payment_type_count,
 tptm.total_payment_count,
-(ptm.payment_type_count::float / tptm.total_payment_count::float) * 100 as payment_type_ratio_percentage
+(ptm.payment_type_count::float / tptm.total_payment_count::float) * 100 as payment_type_ratio_percentage,
+ptm.payment_type_amount
 from payment_type_monthly as ptm
 inner join total_payment_type_monthly as tptm
 on ptm.year_ = tptm.year_ and ptm.month_ = tptm.month_
 order by ptm.year_ asc, ptm.month_ asc, ptm.payment_type asc;
+
+
+---13. Payment Type Mix Ratio Trend
+---CTE: get mix payment type count by month year
+with order_payment_status as (
+select o.order_id, count(distinct(p.payment_type)) as payment_type_count,
+string_agg(p.payment_type,' | ') as list_of_payment_type,
+ count(p.order_id) as payment_sequence_,
+ case when count(distinct(p.payment_type)) > 1 then 'Mix' else 'Non Mix' end as payment_status,
+ case when count(distinct(p.payment_type)) > 1 then sum(p.payment_value) else null end as mix_payment_amount,
+ extract(year from o.order_purchase_timestamp) as year_,
+ extract(month from o.order_purchase_timestamp) as month_,
+ to_char(o.order_purchase_timestamp, 'Month') as month_name
+from olist_datasets.order_payment as p
+inner join olist_datasets.orders as o  
+on p.order_id = o.order_id
+where o.order_status = 'delivered'
+group by o.order_id, extract(year from o.order_purchase_timestamp),
+ extract(month from o.order_purchase_timestamp),
+ to_char(o.order_purchase_timestamp, 'Month')
+),
+---Aggregate mix payment type count by month year
+mix_payment_monthly as (
+select year_, month_, month_name,
+sum(case when payment_status = 'Mix' then payment_type_count else null end) as mix_payment_count,
+sum(case when payment_status = 'Non Mix' then payment_type_count else null end) as non_mix_payment_count,
+sum(mix_payment_amount) as mix_payment_amount_
+from order_payment_status
+group by year_, month_, month_name
+),
+---Final block: get mix payment type ratio trend
+total_payment_monthly as (
+select year_, month_, month_name,
+(mix_payment_count + non_mix_payment_count) as total_payment_count
+from mix_payment_monthly
+)
+select mpm.year_, mpm.month_, mpm.month_name,
+mpm.mix_payment_count, mpm.mix_payment_amount_,
+sum(tpm.total_payment_count) as total_payment_count_,
+(mpm.mix_payment_count::float / sum(tpm.total_payment_count::float)) * 100 as mix_payment_ratio_percentage
+from mix_payment_monthly as mpm
+cross join total_payment_monthly as tpm
+group by mpm.year_, mpm.month_, mpm.month_name, mpm.mix_payment_count, mpm.mix_payment_amount_
+order by mpm.year_ asc, mpm.month_ asc;
