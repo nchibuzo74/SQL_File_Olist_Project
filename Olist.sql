@@ -751,11 +751,13 @@ inner join olist_datasets.orders as o
 on p.order_id = o.order_id
 where o.order_status = 'delivered';
 
+
 ---2. Payment Count
 select count(p.payment_type) as total_payment_count
 from olist_datasets.order_payment as p
     inner join olist_datasets.orders as o on p.order_id = o.order_id
 where o.order_status = 'delivered';
+
 
 ---3. Mix Payment Count
 ---identify the payment type count per order
@@ -772,6 +774,7 @@ group by p.order_id
 --Final block
 select sum(case when count_of_payment_type > 1 then count_of_payment_type else null end) as mix_payment_count
 from aggregation_payment_type;
+
 
 ---4. Non Mix Payment Count
 ---identify the payment type count per order
@@ -801,6 +804,7 @@ group by p.order_id
 )
 select sum(count_of_payment_type) as total_payment_count
 from cte;
+
 
 ---5. Total Payment Amount
 select sum(p.payment_value) as total_payment
