@@ -1002,3 +1002,55 @@ from mix_payment_monthly as mpm
 cross join total_payment_monthly as tpm
 group by mpm.year_, mpm.month_, mpm.month_name, mpm.mix_payment_count, mpm.mix_payment_amount_
 order by mpm.year_ asc, mpm.month_ asc;
+
+---14. Payment Amount Segmentation
+---CTE: Customers Payment Amount
+with customer_payment AS (
+  SELECT 
+    o.customer_id,
+    SUM(p.payment_value) AS total_payment
+  FROM olist_datasets.Orders AS o
+  INNER JOIN olist_datasets.order_payment AS p
+    ON o.order_id = p.order_id
+  WHERE o.order_status = 'delivered'
+  GROUP BY o.customer_id
+),
+---Percentiles for Payment Amount
+percentiles AS (
+  SELECT
+    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY total_payment) AS p25,
+    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY total_payment) AS median,
+    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY total_payment) AS p75,
+    PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY total_payment) AS p90
+  FROM customer_payment
+),
+---Bucket Segment
+bucket_segment AS (
+  SELECT 
+    c.customer_id,
+    c.total_payment,
+    CASE
+      WHEN c.total_payment <= p.p25 THEN 'Low'
+      WHEN c.total_payment > p.p25 AND c.total_payment <= p.median THEN 'Medium'
+      WHEN c.total_payment > p.median AND c.total_payment <= p.p75 THEN 'Medium High'
+      ELSE 'High'
+    END AS bucket_segment,
+    CASE
+      WHEN c.total_payment <= p.p25 THEN 1
+      WHEN c.total_payment > p.p25 AND c.total_payment <= p.median THEN 2
+      WHEN c.total_payment > p.median AND c.total_payment <= p.p75 THEN 3
+      ELSE 4
+    END AS sort_order
+  FROM customer_payment as c
+  CROSS JOIN percentiles as p
+)
+---Final Result
+SELECT
+  bucket_segment,
+  COUNT(DISTINCT customer_id) AS customer_count,
+  MIN(total_payment) AS min_value,
+  MAX(total_payment) AS max_value,
+  AVG(total_payment) AS avg_value
+FROM bucket_segment
+GROUP BY sort_order, bucket_segment
+ORDER BY sort_order;
