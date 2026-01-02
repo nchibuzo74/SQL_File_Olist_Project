@@ -1008,6 +1008,7 @@ order by mpm.year_ asc, mpm.month_ asc;
 with customer_payment AS (
   SELECT 
     o.customer_id,
+    count(p.payment_type) as payment_count,
     SUM(p.payment_value) AS total_payment
   FROM olist_datasets.Orders AS o
   INNER JOIN olist_datasets.order_payment AS p
@@ -1028,6 +1029,7 @@ percentiles AS (
 bucket_segment AS (
   SELECT 
     c.customer_id,
+    c.payment_count,
     c.total_payment,
     CASE
       WHEN c.total_payment <= p.p25 THEN 'Low'
@@ -1048,6 +1050,7 @@ bucket_segment AS (
 SELECT
   bucket_segment,
   COUNT(DISTINCT customer_id) AS customer_count,
+    sum(payment_count) as total_payment_count,
   MIN(total_payment) AS min_value,
   MAX(total_payment) AS max_value,
   AVG(total_payment) AS avg_value
@@ -1060,18 +1063,15 @@ ORDER BY sort_order;
 with customer_mix_payment AS (
   SELECT 
     o.customer_id,
-    SUM(p.payment_value) AS total_mix_payment
+    count(p.payment_type) as payment_count,
+    SUM(p.payment_value) AS total_mix_payment,
+    case when COUNT(DISTINCT p.payment_type) > 1 then 'Mix' else null end as customer_payment_status
   FROM olist_datasets.Orders AS o
   INNER JOIN olist_datasets.order_payment AS p
     ON o.order_id = p.order_id
   WHERE o.order_status = 'delivered'
-    AND p.order_id IN (
-      SELECT order_id
-      FROM olist_datasets.order_payment
-      GROUP BY order_id
-      HAVING COUNT(DISTINCT payment_type) > 1
-    )
   GROUP BY o.customer_id
+  HAVING COUNT(DISTINCT p.payment_type) > 1
 ),
 ---Percentiles for Mixed Payment Amount
 percentiles AS (
@@ -1086,7 +1086,9 @@ percentiles AS (
 bucket_segment AS (
   SELECT 
     c.customer_id,
+    c.payment_count,
     c.total_mix_payment,
+    c.customer_payment_status,
     CASE
       WHEN c.total_mix_payment <= p.p25 THEN 'Low'
       WHEN c.total_mix_payment > p.p25 AND c.total_mix_payment <= p.median THEN 'Medium'
@@ -1105,10 +1107,175 @@ bucket_segment AS (
 ---Final Result
 SELECT
   bucket_segment,
-  COUNT(DISTINCT customer_id) AS customer_count,
+  case when customer_payment_status = 'Mix' then count(distinct(customer_id)) else null end as customer_count,
+  case when customer_payment_status = 'Mix' then sum(payment_count) else null end as total_payment_count,
   MIN(total_mix_payment) AS min_value,
   MAX(total_mix_payment) AS max_value,
   AVG(total_mix_payment) AS avg_value
 FROM bucket_segment
-GROUP BY sort_order, bucket_segment
+GROUP BY bucket_segment, sort_order, customer_payment_status
+order by sort_order asc;
+
+/*
+---------------Validation----------
+  SELECT 
+    o.customer_id,
+case when COUNT(DISTINCT p.payment_type) > 1 then 'Mix' else 'Non Mix' end as customer_payment_status,
+    SUM(p.payment_value) AS total_mix_payment,
+    STRING_AGG(DISTINCT p.payment_type, ' | ') AS payment_types
+  FROM olist_datasets.Orders AS o
+  INNER JOIN olist_datasets.order_payment AS p
+    ON o.order_id = p.order_id
+  WHERE o.order_status = 'delivered'
+  GROUP BY o.customer_id
+    ---HAVING COUNT(DISTINCT p.payment_type) > 1
+*/
+
+----16. Non Mixed Payment Amount Segmentation
+---CTE: Customers Non Mixed Payment Amount
+with customer_non_mix_payment AS (
+  SELECT 
+    o.customer_id,
+    count(p.payment_type) as payment_count,
+    SUM(p.payment_value) AS total_non_mix_payment,
+    case when COUNT(DISTINCT p.payment_type) = 1 then 'Non Mix' else null end as customer_payment_status
+  FROM olist_datasets.Orders AS o
+  INNER JOIN olist_datasets.order_payment AS p
+    ON o.order_id = p.order_id
+  WHERE o.order_status = 'delivered'
+  GROUP BY o.customer_id
+  HAVING COUNT(DISTINCT p.payment_type) = 1
+),
+---Percentiles for Non Mixed Payment Amount
+percentiles AS (
+  SELECT
+    PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY total_non_mix_payment) AS p25,
+    PERCENTILE_CONT(0.50) WITHIN GROUP (ORDER BY total_non_mix_payment) AS median,
+    PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY total_non_mix_payment) AS p75,
+    PERCENTILE_CONT(0.90) WITHIN GROUP (ORDER BY total_non_mix_payment) AS p90
+  FROM customer_non_mix_payment
+),
+---Bucket Segment
+bucket_segment AS (
+  SELECT 
+    c.customer_id,
+    c.payment_count,
+    c.total_non_mix_payment,
+    c.customer_payment_status,
+    CASE
+      WHEN c.total_non_mix_payment <= p.p25 THEN 'Low'
+      WHEN c.total_non_mix_payment > p.p25 AND c.total_non_mix_payment <= p.median THEN 'Medium'
+      WHEN c.total_non_mix_payment > p.median AND c.total_non_mix_payment <= p.p75 THEN 'Medium High'
+      ELSE 'High'
+    END AS bucket_segment,
+    CASE
+      WHEN c.total_non_mix_payment <= p.p25 THEN 1
+      WHEN c.total_non_mix_payment > p.p25 AND c.total_non_mix_payment <= p.median THEN 2
+      WHEN c.total_non_mix_payment > p.median AND c.total_non_mix_payment <= p.p75 THEN 3
+      ELSE 4
+    END AS sort_order
+  FROM customer_non_mix_payment as c
+  CROSS JOIN percentiles as p
+)
+---Final Result
+SELECT
+  bucket_segment,
+  case when customer_payment_status = 'Non Mix' then count(distinct(customer_id)) else null end as customer_count,
+  case when customer_payment_status = 'Non Mix' then sum(payment_count) else null end as total_payment_count,
+  MIN(total_non_mix_payment) AS min_value,
+  MAX(total_non_mix_payment) AS max_value,
+  AVG(total_non_mix_payment) AS avg_value
+FROM bucket_segment
+GROUP BY bucket_segment, sort_order, customer_payment_status
+order by sort_order asc;
+
+---17. Payment Count Segmentation
+WITH customer_payment_count AS (
+  SELECT 
+    o.customer_id,
+    COUNT(p.payment_type) AS payment_count,
+    STRING_AGG(p.payment_type, ' | ') AS list_payment_types
+  FROM olist_datasets.Orders AS o
+  INNER JOIN olist_datasets.order_payment AS p
+    ON o.order_id = p.order_id
+  WHERE o.order_status = 'delivered'
+  GROUP BY o.customer_id
+),
+bucket_segment AS (
+  SELECT 
+    customer_id,
+    payment_count,
+    list_payment_types,
+    CASE
+      WHEN payment_count = 1 THEN '1'
+      WHEN payment_count = 2 THEN '2'
+      WHEN payment_count = 3 THEN '3'
+      WHEN payment_count = 4 THEN '4'
+      WHEN payment_count = 5 THEN '5'
+      ELSE '> 5'
+    END AS bucket_segment,
+    CASE
+      WHEN payment_count = 1 THEN 1
+      WHEN payment_count = 2 THEN 2
+      WHEN payment_count = 3 THEN 3
+      WHEN payment_count = 4 THEN 4
+      WHEN payment_count = 5 THEN 5
+      ELSE 6
+    END AS sort_order
+  FROM customer_payment_count
+)
+---Final Result
+SELECT
+  bucket_segment,
+  COUNT(DISTINCT customer_id) AS customer_count
+  ---STRING_AGG(DISTINCT list_payment_types, '; ') AS sample_payment_combinations
+FROM bucket_segment
+GROUP BY bucket_segment, sort_order
+ORDER BY sort_order;
+
+---18. Payment Installment Segmentation
+WITH customer_payment_installment AS (
+  SELECT 
+    o.customer_id,
+    SUM(p.payment_installments) AS total_payment_installments,
+    count(p.payment_type) as total_payment_count
+  FROM olist_datasets.Orders AS o
+  INNER JOIN olist_datasets.order_payment AS p
+    ON o.order_id = p.order_id
+  WHERE o.order_status = 'delivered'
+  GROUP BY o.customer_id
+),
+bucket_segment AS (
+  SELECT 
+    customer_id,
+    total_payment_installments,
+    total_payment_count,
+    CASE
+      WHEN total_payment_installments = 0 THEN 'No Installment'
+      WHEN total_payment_installments = 1 then '1'
+      WHEN total_payment_installments = 2 then '2'
+      WHEN total_payment_installments = 3 then '3'
+      WHEN total_payment_installments = 4 then '4'
+      WHEN total_payment_installments >= 5 and total_payment_installments <= 10 then '5-10'
+      ELSE '> 10'
+    END AS bucket_segment,
+    CASE
+      WHEN total_payment_installments = 0 THEN 0
+      WHEN total_payment_installments = 1 then 1
+      WHEN total_payment_installments = 2 then 2
+      WHEN total_payment_installments = 3 then 3
+      WHEN total_payment_installments = 4 then 4
+      WHEN total_payment_installments >= 5 and total_payment_installments <= 10 then 5
+      ELSE 6
+    END AS sort_order
+  FROM customer_payment_installment
+)
+---Final Result
+SELECT
+  bucket_segment,
+  COUNT(DISTINCT customer_id) AS customer_count,
+  sum(total_payment_count) as total_payment_count_,
+  SUM(total_payment_installments) AS total_installments
+FROM bucket_segment
+GROUP BY bucket_segment, sort_order
 ORDER BY sort_order;

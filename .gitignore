@@ -70,29 +70,20 @@ Thumbs.db
 *~
 
 ### Power BI ###
+# Ignore Power BI files with actual data
 *.pbix
 *.pbip
-*.pbit
+*.pbids
+*.rsd
 *.bit
 *.pbi
 
-# Power BI files
-*.pbix
-*.pbit
-*.pbids
-*.rsd
+# But allow .pbit template files (they don't contain data)
+!*.pbit
 
-# Specific Power BI file to ignore
-Olist_Store_[Chibuzo Nwankwo].pbix
-reports/sensitive-data.pbix
-
-# Actual Power BI files with real data
-*.pbix
-
-# Keep templates and documentation
-!*-template.pbit
-!README.md
-!setup-guide.md
+# Specific files to ignore if needed
+# Olist_Store_[Chibuzo Nwankwo].pbix
+# reports/sensitive-data.pbix
 
 ### Jupyter Notebook ###
 .ipynb_checkpoints
