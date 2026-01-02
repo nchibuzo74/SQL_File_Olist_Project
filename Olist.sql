@@ -1279,3 +1279,320 @@ SELECT
 FROM bucket_segment
 GROUP BY bucket_segment, sort_order
 ORDER BY sort_order;
+
+
+/*
+---Product Analysis:
+1. Total Products
+2. Total Delivered GMV (Revenue)
+3. Top Delivered Product ID and it's GMV
+4. Worst Cancelled Product ID and it's GMV
+5. Top Delivered Category and it's GMV
+6. Most Popular Category
+7. Worst category
+8. Delivered GMV per Product
+9. Product Contribution
+10. Top 20 Cancelled Product per Month Year
+11. Top 20 Delivered GMV per Category
+12. GMV MoM Growth/Decline
+*/
+
+---1. Total Products
+select count(distinct(p.product_id)) as total_products
+from olist_datasets.product as p;
+
+---2. Total Delivered GMV (Revenue)
+select sum(p.payment_value) as total_delivered_gmv
+from olist_datasets.order_payment as p
+inner join olist_datasets.orders as o
+on p.order_id = o.order_id
+where o.order_status = 'delivered';
+
+---3. Top Delivered Product ID and it's GMV
+select oi.product_id, sum(op.payment_value) as product_gmv
+from olist_datasets.order_items as oi
+inner join olist_datasets.orders as o
+on oi.order_id = o.order_id
+inner join olist_datasets.order_payment as op
+on oi.order_id = op.order_id
+where o.order_status = 'delivered'
+group by oi.product_id
+order by product_gmv desc
+limit 1;
+
+---4. Worst Cancelled Product ID and it's GMV
+select oi.product_id, sum(op.payment_value) as product_gmv
+from olist_datasets.order_items as oi
+inner join olist_datasets.orders as o
+on oi.order_id = o.order_id
+inner join olist_datasets.order_payment as op
+on oi.order_id = op.order_id
+where o.order_status = 'canceled'
+group by oi.product_id
+order by product_gmv asc
+limit 1;
+
+---5. Top Delivered Category and it's GMV
+select p.product_category_name, sum(op.payment_value) as category_gmv
+from olist_datasets.product as p
+inner join olist_datasets.order_items as oi
+on p.product_id = oi.product_id
+inner join olist_datasets.orders as o
+on oi.order_id = o.order_id
+inner join olist_datasets.order_payment as op
+on oi.order_id = op.order_id
+where o.order_status = 'delivered'
+group by p.product_category_name
+order by category_gmv desc
+limit 1;
+
+---6. Most Popular Category
+select p.product_category_name, count(distinct(oi.product_id)) as total_products_sold
+from olist_datasets.product as p
+inner join olist_datasets.order_items as oi
+on p.product_id = oi.product_id
+inner join olist_datasets.orders as o
+on oi.order_id = o.order_id
+where o.order_status = 'delivered'
+group by p.product_category_name
+order by total_products_sold desc
+limit 1;
+
+---7. Worst category
+select p.product_category_name, count(distinct(oi.product_id)) as total_products_sold
+from olist_datasets.product as p
+inner join olist_datasets.order_items as oi
+on p.product_id = oi.product_id
+inner join olist_datasets.orders as o
+on oi.order_id = o.order_id
+where o.order_status = 'delivered'
+group by p.product_category_name
+order by total_products_sold asc
+limit 1;
+
+---8. Delivered GMV per Product
+select oi.product_id, sum(op.payment_value) as product_gmv
+from olist_datasets.order_items as oi
+inner join olist_datasets.orders as o
+on oi.order_id = o.order_id
+inner join olist_datasets.order_payment as op
+on oi.order_id = op.order_id
+where o.order_status = 'delivered'
+group by oi.product_id
+order by product_gmv desc;
+
+---9. Product Contribution
+with total_gmv as (
+select sum(op.payment_value) as total_delivered_gmv
+from olist_datasets.order_payment as op
+inner join olist_datasets.orders as o
+on op.order_id = o.order_id
+where o.order_status = 'delivered'
+),
+product_gmv as (
+select oi.product_id, sum(op.payment_value) as product_gmv
+from olist_datasets.order_items as oi
+inner join olist_datasets.orders as o
+on oi.order_id = o.order_id
+inner join olist_datasets.order_payment as op
+on oi.order_id = op.order_id
+where o.order_status = 'delivered'
+group by oi.product_id
+)
+select pg.product_id, pg.product_gmv,
+tg.total_delivered_gmv,
+(pg.product_gmv::float / tg.total_delivered_gmv::float) * 100 as product_contribution_percentage
+from product_gmv as pg
+cross join total_gmv as tg
+order by product_contribution_percentage desc;
+
+---10. Top 20 Cancelled Product per Month Year
+select extract(year from o.order_purchase_timestamp) as year_,
+extract(month from o.order_purchase_timestamp) as month_,
+to_char(o.order_purchase_timestamp, 'Month') as month_name,
+oi.product_id, count(oi.product_id) as total_cancelled_orders
+from olist_datasets.order_items as oi
+inner join olist_datasets.orders as o
+on oi.order_id = o.order_id
+where o.order_status = 'canceled'
+group by extract(year from o.order_purchase_timestamp),
+extract(month from o.order_purchase_timestamp),
+to_char(o.order_purchase_timestamp, 'Month'),
+oi.product_id
+order by year_ asc, month_ asc, total_cancelled_orders desc
+limit 20;
+
+---11. Top 20 Delivered GMV per Category
+select p.product_category_name, sum(op.payment_value) as category_gmv
+from olist_datasets.product as p
+inner join olist_datasets.order_items as oi
+on p.product_id = oi.product_id
+inner join olist_datasets.orders as o
+on oi.order_id = o.order_id
+inner join olist_datasets.order_payment as op
+on oi.order_id = op.order_id
+where o.order_status = 'delivered'
+group by p.product_category_name
+order by category_gmv desc
+limit 20;
+
+---12. GMV MoM Growth/Decline
+with monthly_gmv as (
+select extract(year from o.order_purchase_timestamp) as year_,
+extract(month from o.order_purchase_timestamp) as month_,
+to_char(o.order_purchase_timestamp, 'Month') as month_name,
+sum(op.payment_value) as total_monthly_gmv
+from olist_datasets.orders as o
+inner join olist_datasets.order_payment as op
+on o.order_id = op.order_id
+where o.order_status = 'delivered'
+group by extract(year from o.order_purchase_timestamp),
+extract(month from o.order_purchase_timestamp),
+to_char(o.order_purchase_timestamp, 'Month')
+)
+select 
+    mg_current.year_,
+    mg_current.month_,
+    mg_current.month_name,
+    mg_current.total_monthly_gmv,
+    mg_previous.total_monthly_gmv as previous_month_gmv,
+    ((mg_current.total_monthly_gmv - mg_previous.total_monthly_gmv)::float / mg_previous.total_monthly_gmv::float) * 100 as mom_growth_decline_percentage
+from monthly_gmv as mg_current
+left join monthly_gmv as mg_previous
+on (mg_current.year_ = mg_previous.year_ AND mg_current.month_ = mg_previous.month_ + 1)
+   OR (mg_current.year_ = mg_previous.year_ + 1 AND mg_current.month_ = 1 AND mg_previous.month_ = 12)
+order by mg_current.year_ asc, mg_current.month_ asc;
+
+
+/*
+---Seller and Logistic Analysis:
+1. Total Seller State
+2. Total Seller City
+3. Total Sellers
+4. Total Delivered Order
+5. Total Delivered GMV
+6. Total Products Delivered
+7. Top Seller ID
+8. Total Delivered GMV
+9. Worst Seller ID
+10. Top Cancelled GMV
+11. Seller with Most Fulfilled Customers
+12. Seller per Region
+13. Sellers Contribution
+14. Sellers Segmentation
+15. Distribution of Sellers Rating
+16. Delivered Order Delay Analysis
+17. Percentage Order Delay Penetration
+18. Delivery Performance by Segment
+19. Days Delivered Outlier
+20. Delivery Day Outlier Analysis
+21. Sellers Engagement Analysis
+*/
+
+---1. Total Seller State
+select count(distinct(seller_state)) as total_seller_state
+from olist_datasets.sellers;
+
+---2. Total Seller City
+select count(distinct(seller_city)) as total_seller_city
+from olist_datasets.sellers;
+
+---3. Total Sellers
+select count(distinct(seller_id)) as total_sellers
+from olist_datasets.sellers;
+
+---4. Total Delivered Order
+select count(distinct(o.order_id)) as total_delivered_orders
+from olist_datasets.orders as o
+where o.order_status = 'delivered';
+
+---5. Total Delivered GMV
+select sum(p.payment_value) as total_delivered_gmv
+from olist_datasets.order_payment as p
+inner join olist_datasets.orders as o
+on p.order_id = o.order_id
+where o.order_status = 'delivered';
+
+---6. Total Products Delivered
+select count(distinct(oi.product_id)) as total_products_delivered
+from olist_datasets.order_items as oi
+inner join olist_datasets.orders as o
+on oi.order_id = o.order_id
+where o.order_status = 'delivered';
+
+---7. Top Seller ID
+select oi.seller_id, sum(op.payment_value) as seller_gmv
+from olist_datasets.order_items as oi
+inner join olist_datasets.orders as o
+on oi.order_id = o.order_id
+inner join olist_datasets.order_payment as op
+on oi.order_id = op.order_id
+where o.order_status = 'delivered'
+group by oi.seller_id
+order by seller_gmv desc
+limit 1;
+
+---8. Worst Seller ID
+select oi.seller_id, sum(op.payment_value) as seller_gmv
+from olist_datasets.order_items as oi
+inner join olist_datasets.orders as o
+on oi.order_id = o.order_id
+inner join olist_datasets.order_payment as op
+on oi.order_id = op.order_id
+where o.order_status = 'delivered'
+group by oi.seller_id
+order by seller_gmv asc
+limit 1;
+
+---9. Top Cancelled GMV
+select oi.seller_id, sum(op.payment_value) as cancelled_seller_gmv
+from olist_datasets.order_items as oi
+inner join olist_datasets.orders as o
+on oi.order_id = o.order_id
+inner join olist_datasets.order_payment as op
+on oi.order_id = op.order_id
+where o.order_status = 'canceled'
+group by oi.seller_id
+order by cancelled_seller_gmv desc
+limit 1;
+
+---10. Seller with Most Fulfilled Customers
+select oi.seller_id, count(distinct(o.customer_id)) as total_fulfilled_customers
+from olist_datasets.order_items as oi
+inner join olist_datasets.orders as o
+on oi.order_id = o.order_id
+where o.order_status = 'delivered'
+group by oi.seller_id
+order by total_fulfilled_customers desc
+limit 1;
+
+---11. Seller per Region
+select s.seller_state, count(distinct(s.seller_id)) as total_sellers_per_region
+from olist_datasets.sellers as s
+group by s.seller_state
+order by total_sellers_per_region desc;
+
+---12. Sellers Contribution
+with total_gmv as (
+select sum(op.payment_value) as total_delivered_gmv
+from olist_datasets.order_payment as op
+inner join olist_datasets.orders as o
+on op.order_id = o.order_id
+where o.order_status = 'delivered'
+),
+seller_gmv as (
+select oi.seller_id, sum(op.payment_value) as seller_gmv
+from olist_datasets.order_items as oi
+inner join olist_datasets.orders as o
+on oi.order_id = o.order_id
+inner join olist_datasets.order_payment as op
+on oi.order_id = op.order_id
+where o.order_status = 'delivered'
+group by oi.seller_id
+)
+select sg.seller_id, sg.seller_gmv,
+tg.total_delivered_gmv,
+(sg.seller_gmv::float / tg.total_delivered_gmv::float) * 100 as seller_contribution_percentage
+from seller_gmv as sg
+cross join total_gmv as tg
+order by seller_contribution_percentage desc;
